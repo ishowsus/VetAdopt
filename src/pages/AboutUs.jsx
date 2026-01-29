@@ -1,153 +1,155 @@
 import { useEffect } from "react";
 
-function About() {
-  const team = [
-    { id: 1, name: "Nadine Cruz", role: "Frontend Developer", img: "https://randomuser.me/api/portraits/women/68.jpg" },
-    { id: 2, name: "Aaron Nash", role: "Backend Developer", img: "https://randomuser.me/api/portraits/men/72.jpg" },
-    { id: 3, name: "Sophia Lee", role: "UI/UX Designer", img: "https://randomuser.me/api/portraits/women/65.jpg" },
-    { id: 4, name: "Liam Kim", role: "Fullstack Developer", img: "https://randomuser.me/api/portraits/men/65.jpg" },
-  ];
+const TEAM = [
+  { id: 1, name: "Nadine Cruz", role: "Frontend Developer", img: "https://randomuser.me/api/portraits/women/68.jpg" },
+  { id: 2, name: "Aaron Nash", role: "Backend Developer", img: "https://randomuser.me/api/portraits/men/72.jpg" },
+  { id: 3, name: "Sophia Lee", role: "UI/UX Designer", img: "https://randomuser.me/api/portraits/women/65.jpg" },
+  { id: 4, name: "Liam Kim", role: "Fullstack Developer", img: "https://randomuser.me/api/portraits/men/65.jpg" },
+];
 
+function About() {
   useEffect(() => {
-    // Simple scroll animation: add "visible" class when elements appear
-    const animateOnScroll = () => {
-      const elements = document.querySelectorAll('.fade-on-scroll');
-      const windowBottom = window.innerHeight;
-      elements.forEach(el => {
-        const elementTop = el.getBoundingClientRect().top;
-        if(elementTop < windowBottom - 50){
-          el.classList.add('visible');
-        }
-      });
-    };
-    window.addEventListener('scroll', animateOnScroll);
-    animateOnScroll();
-    return () => window.removeEventListener('scroll', animateOnScroll);
+    // Intersection Observer is the "Gold Standard" for scroll animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const elements = document.querySelectorAll(".fade-on-scroll");
+    elements.forEach((el) => observer.observe(el));
+
+    // Cleanup to prevent memory leaks and errors when leaving the page
+    return () => observer.disconnect();
   }, []);
 
   return (
     <>
       <style>{`
-        body { font-family: Arial, sans-serif; margin:0; padding:0; }
-        h2 { color:#2e7d32; }
-        p { color:#444; line-height:1.6; }
-
-        /* HERO */
+        body { font-family: 'Inter', sans-serif; margin:0; padding:0; overflow-x: hidden; }
+        
+        /* MODERN CURVED HERO */
         .about-hero {
-          height:60vh;
-          display:flex;
-          flex-direction:column;
-          justify-content:center;
-          align-items:center;
-          text-align:center;
-          color:white;
-          background:linear-gradient(rgba(46,125,50,0.7),rgba(46,125,50,0.7)),
-                     url("https://images.unsplash.com/photo-1583337130417-51b4a9de0913") center/cover no-repeat;
+          height: 65vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          color: white;
+          background: linear-gradient(rgba(27, 94, 32, 0.8), rgba(46, 125, 50, 0.8)),
+                      url("https://images.unsplash.com/photo-1583337130417-51b4a9de0913") center/cover no-repeat;
+          /* This creates the modern "Swoosh" at the bottom */
+          clip-path: ellipse(150% 100% at 50% 0%);
+          padding-bottom: 50px;
         }
-        .about-hero h1 { font-size:3rem; margin-bottom:15px; animation: fadeInDown 1s ease; }
-        .about-hero p { font-size:1.2rem; max-width:700px; animation: fadeIn 1s ease; }
 
-        /* STORY */
-        .story { max-width:1000px; margin:80px auto; padding:0 20px; text-align:center; }
-        .story h2 { margin-bottom:30px; font-size:2rem; }
-        .story p { margin-bottom:20px; }
+        .about-hero h1 { font-size: 3.5rem; margin: 0; }
+        .about-hero p { font-size: 1.2rem; opacity: 0.9; max-width: 600px; }
 
-        /* FEATURES */
-        .features { display:flex; justify-content:center; gap:30px; flex-wrap:wrap; margin:50px 20px; }
+        /* ANIMATION CLASSES */
+        .fade-on-scroll {
+          opacity: 0;
+          transform: translateY(40px);
+          transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .fade-on-scroll.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        /* SECTION STYLING */
+        .content-section { max-width: 1100px; margin: 80px auto; padding: 0 20px; text-align: center; }
+        
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 50px; }
+        
         .feature-card {
-          background:white; padding:30px; border-radius:16px; box-shadow:0 8px 25px rgba(0,0,0,0.1);
-          flex:1 1 250px; text-align:center; transition: transform 0.3s, background 0.3s, opacity 1s, transform 1s;
-          opacity:0; transform:translateY(50px);
+          background: #fff;
+          padding: 40px;
+          border-radius: 20px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+          border: 1px solid #f0f0f0;
+          transition: transform 0.3s ease;
         }
-        .feature-card.visible { opacity:1; transform:translateY(0);}
-        .feature-card:hover { transform:translateY(-5px) scale(1.02); background:#f1f8f2; }
-        .feature-card h3 { margin-bottom:15px; color:#1b5e20; }
-        .feature-card p { color:#444; }
-        .feature-card svg { width:50px; height:50px; margin-bottom:15px; fill:#2e7d32; animation: iconBounce 2s infinite; }
+        .feature-card:hover { transform: translateY(-10px); }
 
-        /* TEAM */
-        .team { max-width:1000px; margin:80px auto; padding:0 20px; text-align:center; }
-        .team h2 { margin-bottom:40px; }
-        .team-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:25px; }
-        .team-card {
-          background:white; padding:20px; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.08);
-          transition: transform 0.3s, opacity 1s, transform 1s; opacity:0; transform:translateY(50px);
+        /* TEAM GRID */
+        .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 40px; margin-top: 50px; }
+        .team-member img { 
+          width: 160px; height: 160px; 
+          border-radius: 50%; 
+          object-fit: cover; 
+          margin-bottom: 20px;
+          border: 5px solid #e8f5e9;
         }
-        .team-card.visible { opacity:1; transform:translateY(0);}
-        .team-card:hover { transform:translateY(-5px) scale(1.02);}
-        .team-card img { width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px; }
-        .team-card h3 { margin-bottom:5px; color:#1b5e20; }
-        .team-card p { color:#444; }
 
-        /* CTA */
-        .about-cta { background:#e8f5e9; padding:80px 20px; text-align:center; border-radius:12px; margin:80px 0; }
-        .about-cta h2 { color:#2e7d32; font-size:2rem; margin-bottom:15px; }
-        .about-cta p { font-size:1.1rem; color:#444; margin-bottom:25px; }
-        .about-cta button { padding:14px 32px; background:#2e7d32; color:white; border-radius:30px; font-size:1.1rem; transition: transform 0.3s, background 0.3s; }
-        .about-cta button:hover { transform:scale(1.05); background:#1b5e20; }
-
-        /* ANIMATIONS */
-        @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-        @keyframes fadeInDown { from {opacity:0; transform:translateY(-30px);} to {opacity:1; transform:translateY(0);} }
-        @keyframes iconBounce { 0%, 100% { transform:translateY(0);} 50% { transform:translateY(-10px);} }
-
-        @media(max-width:768px){
-          .about-hero h1{font-size:2.2rem;}
-          .about-hero p{font-size:1rem;}
+        /* BUTTONS */
+        .cta-btn {
+          background: #2e7d32;
+          color: white;
+          padding: 15px 40px;
+          border-radius: 50px;
+          border: none;
+          font-weight: bold;
+          font-size: 1.1rem;
+          cursor: pointer;
+          transition: 0.3s;
         }
+        .cta-btn:hover { background: #1b5e20; transform: scale(1.05); }
       `}</style>
 
-      {/* HERO */}
       <section className="about-hero">
-        <h1>About VetAdopt</h1>
-        <p>Connecting pet owners, adopters, and veterinarians through one easy-to-use platform.</p>
+        <h1 className="fade-on-scroll">Our Mission 🐾</h1>
+        <p className="fade-on-scroll">We believe every pet deserves a loving home and every owner deserves a helping hand.</p>
       </section>
 
-      {/* OUR STORY */}
-      <section className="story">
-        <h2>Our Story</h2>
-        <p>VetAdopt was built by developers who love animals and tech. Users can list pets for adoption, schedule vet visits, and manage pet care seamlessly.</p>
-        <p>By bridging the gap between pet owners, adopters, and veterinary clinics, we ensure pets are cared for and find loving homes faster.</p>
+      <section className="content-section">
+        <h2 style={{color: '#2e7d32', fontSize: '2.5rem'}}>Our Story</h2>
+        <p style={{maxWidth: '800px', margin: '20px auto', fontSize: '1.1rem', color: '#555'}}>
+          VetAdopt started with a simple goal: to make pet adoption as transparent and easy as possible. 
+          By combining tech with a passion for animal welfare, we created a bridge between local shelters and new families.
+        </p>
+
+        <div className="feature-grid">
+          <div className="feature-card fade-on-scroll">
+            <div style={{fontSize: '3rem'}}>🏠</div>
+            <h3>Quick Listing</h3>
+            <p>Shelters and owners can list pets in under 2 minutes.</p>
+          </div>
+          <div className="feature-card fade-on-scroll">
+            <div style={{fontSize: '3rem'}}>🩺</div>
+            <h3>Vet Verified</h3>
+            <p>Direct integration with clinics to ensure pet health history.</p>
+          </div>
+          <div className="feature-card fade-on-scroll">
+            <div style={{fontSize: '3rem'}}>🤝</div>
+            <h3>Community</h3>
+            <p>Join a network of over 10,000 animal lovers nationwide.</p>
+          </div>
+        </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="features">
-        <div className="feature-card fade-on-scroll">
-          <svg viewBox="0 0 64 64"><path d="M32 4C18 4 6 16 6 30c0 12 18 30 26 30s26-18 26-30C58 16 46 4 32 4zm0 44c-8-6-14-15-14-20 0-8 6-14 14-14s14 6 14 14c0 5-6 14-14 20z"/></svg>
-          <h3>🐾 List Your Pet</h3>
-          <p>Add pets for adoption with photos and details easily.</p>
-        </div>
-        <div className="feature-card fade-on-scroll">
-          <svg viewBox="0 0 64 64"><path d="M32 2a28 28 0 1 0 28 28A28 28 0 0 0 32 2zm0 52a24 24 0 1 1 24-24 24 24 0 0 1-24 24zm0-40a4 4 0 1 0 4 4 4 4 0 0 0-4-4zm2 18H30V18h4z"/></svg>
-          <h3>🏥 Vet Scheduling</h3>
-          <p>Find nearby vets and schedule appointments directly.</p>
-        </div>
-        <div className="feature-card fade-on-scroll">
-          <svg viewBox="0 0 64 64"><path d="M32 4L28 24h8l-4-20zM20 32h24v4H20zM20 42h24v4H20z"/></svg>
-          <h3>💚 Track & Connect</h3>
-          <p>Monitor your pet’s adoption status and medical history.</p>
-        </div>
-      </section>
-
-      {/* TEAM */}
-      <section className="team">
-        <h2>Meet the Team</h2>
-        <div className="team-cards">
-          {team.map(member => (
-            <div key={member.id} className="team-card fade-on-scroll">
+      <section className="content-section" style={{background: '#f9f9f9', padding: '100px 20px', borderRadius: '40px'}}>
+        <h2 style={{color: '#2e7d32'}}>The Team</h2>
+        <div className="team-grid">
+          {TEAM.map((member, index) => (
+            <div key={member.id} className="team-member fade-on-scroll" style={{transitionDelay: `${index * 0.15}s`}}>
               <img src={member.img} alt={member.name} />
-              <h3>{member.name}</h3>
-              <p>{member.role}</p>
+              <h3 style={{margin: '10px 0 5px'}}>{member.name}</h3>
+              <p style={{color: '#666'}}>{member.role}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="about-cta">
-        <h2>Get Started with VetAdopt</h2>
-        <p>List your pet, schedule vet appointments, and join our growing pet community today.</p>
-        <button>Explore Now</button>
+      <section className="content-section" style={{marginBottom: '100px'}}>
+        <h2 className="fade-on-scroll">Ready to make a difference?</h2>
+        <button className="cta-btn fade-on-scroll">Explore Pets Now</button>
       </section>
     </>
   );

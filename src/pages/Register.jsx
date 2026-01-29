@@ -1,43 +1,175 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Register() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [strength, setStrength] = useState({ label: "", color: "#e0e0e0", width: "0%" });
+
+  // Password Strength Logic
+  useEffect(() => {
+    const pass = formData.password;
+    if (!pass) {
+      setStrength({ label: "", color: "#e0e0e0", width: "0%" });
+      return;
+    }
+
+    if (pass.length < 6) {
+      setStrength({ label: "Weak", color: "#f44336", width: "33%" });
+    } else if (pass.length < 10 || !/[0-9]/.test(pass)) {
+      setStrength({ label: "Fair", color: "#ffb300", width: "66%" });
+    } else {
+      setStrength({ label: "Strong", color: "#2e7d32", width: "100%" });
+    }
+  }, [formData.password]);
 
   const handleRegister = () => {
-    if (!name || !email || !password || !confirmPassword) return alert("Please fill in all fields");
-    if (password !== confirmPassword) return alert("Passwords do not match!");
-    alert(`Registration successful! Welcome, ${name}`);
-    navigate("/login"); // redirect to login after register
+    const { name, email, password, confirmPassword } = formData;
+    if (!name || !email || !password) return alert("Please fill in all fields");
+    if (password !== confirmPassword) return alert("Passwords do not match");
+    
+    localStorage.setItem("user", JSON.stringify({ name, email }));
+    alert(`Account created for ${name}!`);
+    navigate("/profile");
   };
 
   return (
-    <>
+    <div className="register-page">
       <style>{`
-        body { font-family: Arial, sans-serif; background:#f0f4f1; margin:0; }
-        .auth-container { max-width: 400px; margin: 100px auto; background:white; border-radius:15px; padding:40px 30px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; }
-        h2 { color:#2e7d32; margin-bottom:20px; }
-        input { width:100%; padding:12px 15px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; font-size:1rem; }
-        button { width:100%; padding:14px 0; background:#2e7d32; color:white; border:none; border-radius:25px; font-weight:bold; cursor:pointer; transition:0.3s; }
-        button:hover{ background:#1b5e20; }
-        p { margin-top:15px; font-size:0.9rem; color:#555; }
-        p span { color:#2e7d32; font-weight:bold; cursor:pointer; }
+        .register-page {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 100%);
+          font-family: 'Inter', sans-serif;
+          padding: 20px;
+        }
+
+        .register-card {
+          background: #ffffff;
+          width: 100%;
+          max-width: 450px;
+          padding: 40px;
+          border-radius: 30px;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        h2 { color: #1b5e20; margin-bottom: 8px; text-align: center; }
+        .subtitle { color: #666; text-align: center; margin-bottom: 30px; font-size: 0.9rem; }
+
+        .input-group { margin-bottom: 18px; }
+        .input-group label {
+          display: block;
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: #2e7d32;
+          margin-bottom: 6px;
+          text-transform: uppercase;
+        }
+
+        input {
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 2px solid #eee;
+          font-size: 1rem;
+          box-sizing: border-box;
+          outline: none;
+          transition: 0.3s;
+        }
+
+        input:focus { border-color: #2e7d32; background: #fafafa; }
+
+        /* STRENGTH METER */
+        .strength-container { margin-top: 8px; }
+        .strength-bar-bg { height: 4px; background: #eee; border-radius: 2px; overflow: hidden; }
+        .strength-bar-fill { height: 100%; transition: all 0.4s ease; }
+        .strength-text { font-size: 0.7rem; font-weight: bold; margin-top: 4px; text-align: right; color: ${strength.color}; }
+
+        .reg-btn {
+          width: 100%;
+          padding: 15px;
+          background: #2e7d32;
+          color: white;
+          border: none;
+          border-radius: 15px;
+          font-weight: 700;
+          font-size: 1rem;
+          cursor: pointer;
+          margin-top: 20px;
+          transition: 0.3s;
+        }
+
+        .reg-btn:hover { background: #1b5e20; transform: translateY(-2px); }
+        .footer-link { text-align: center; margin-top: 20px; font-size: 0.9rem; color: #666; }
+        .footer-link span { color: #2e7d32; font-weight: 700; cursor: pointer; }
       `}</style>
 
-      <div className="auth-container">
-        <h2>Register</h2>
-        <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-        <button onClick={handleRegister}>Register</button>
-        <p>Already have an account? <span onClick={() => navigate("/login")}>Login</span></p>
+      <div className="register-card">
+        <h2>Create Account</h2>
+        <p className="subtitle">Join the community helping pets in Cebu</p>
+
+        <div className="input-group">
+          <label>Full Name</label>
+          <input 
+            type="text" 
+            placeholder="Juan Dela Cruz" 
+            onChange={(e) => setFormData({...formData, name: e.target.value})} 
+          />
+        </div>
+
+        <div className="input-group">
+          <label>Email Address</label>
+          <input 
+            type="email" 
+            placeholder="juan@email.com" 
+            onChange={(e) => setFormData({...formData, email: e.target.value})} 
+          />
+        </div>
+
+        <div className="input-group">
+          <label>Password</label>
+          <input 
+            type="password" 
+            placeholder="••••••••" 
+            onChange={(e) => setFormData({...formData, password: e.target.value})} 
+          />
+          {/* Strength Meter Component */}
+          <div className="strength-container">
+            <div className="strength-bar-bg">
+              <div 
+                className="strength-bar-fill" 
+                style={{ width: strength.width, background: strength.color }}
+              ></div>
+            </div>
+            <div className="strength-text">{strength.label}</div>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label>Confirm Password</label>
+          <input 
+            type="password" 
+            placeholder="••••••••" 
+            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} 
+          />
+        </div>
+
+        <button className="reg-btn" onClick={handleRegister}>
+          Join VetAdopt
+        </button>
+
+        <p className="footer-link">
+          Already have an account? <span onClick={() => navigate("/login")}>Login</span>
+        </p>
       </div>
-    </>
+    </div>
   );
 }
 
