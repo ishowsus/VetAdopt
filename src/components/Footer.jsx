@@ -3,7 +3,7 @@ function Footer() {
     <>
       <style>{`
         .footer {
-          background: #1b5e20;
+          background: #55420f;
           color: #e8f5e9;
           padding: 30px 20px;
           margin-top: 60px;

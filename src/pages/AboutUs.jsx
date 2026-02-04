@@ -42,7 +42,7 @@ function About() {
           align-items: center;
           text-align: center;
           color: white;
-          background: linear-gradient(rgba(27, 94, 32, 0.8), rgba(46, 125, 50, 0.8)),
+          background: linear-gradient(rgba(255, 230, 0, 0.8), rgba(6, 126, 6, 0.8)),
                       url("https://images.unsplash.com/photo-1583337130417-51b4a9de0913") center/cover no-repeat;
           /* This creates the modern "Swoosh" at the bottom */
           clip-path: ellipse(150% 100% at 50% 0%);
@@ -69,11 +69,11 @@ function About() {
         .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 50px; }
         
         .feature-card {
-          background: #fff;
+          background: #f3b817;
           padding: 40px;
           border-radius: 20px;
           box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-          border: 1px solid #f0f0f0;
+          border: 1px solid #e2a809;
           transition: transform 0.3s ease;
         }
         .feature-card:hover { transform: translateY(-10px); }
@@ -85,12 +85,12 @@ function About() {
           border-radius: 50%; 
           object-fit: cover; 
           margin-bottom: 20px;
-          border: 5px solid #e8f5e9;
+          border: 5px solid #f3b817;
         }
 
         /* BUTTONS */
         .cta-btn {
-          background: #2e7d32;
+          background: #b68b16;
           color: white;
           padding: 15px 40px;
           border-radius: 50px;

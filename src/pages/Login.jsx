@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+// Firebase imports
+import { auth, db } from "../Firebase"; 
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 function Login() {
   const navigate = useNavigate();
@@ -7,14 +11,41 @@ function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = () => {
+  // --- FIXED: Firebase Logic with Role Support ---
+  const handleLogin = async () => {
     if (!email || !password) return alert("Please fill in all fields");
-    if (!/\S+@\S+\.\S+/.test(email)) return alert("Please enter a valid email");
 
-    localStorage.setItem("user", JSON.stringify({ email }));
-    // Optional: add a small delay for a "loading" feel
-    alert(`Welcome back, ${email.split('@')[0]}!`);
-    navigate("/profile");
+    try {
+      // 1. Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Fetch role from Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const role = userDoc.data()?.role || "user"; // default to 'user'
+
+      // 3. Store user info in localStorage
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        role, // important for admin routes
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // 4. Trigger authChange event so Navbar / ProtectedRoute updates
+      window.dispatchEvent(new Event("authChange"));
+
+      // 5. Redirect based on role
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/profile");
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Invalid email or password. Please try again.");
+    }
   };
 
   return (
@@ -42,21 +73,11 @@ function Login() {
           border: 1px solid rgba(255,255,255,0.3);
         }
 
-        .brand-logo {
-          font-size: 2.5rem;
-          margin-bottom: 10px;
-          display: inline-block;
-        }
-
+        .brand-logo { font-size: 2.5rem; margin-bottom: 10px; display: inline-block; }
         h2 { color: #1b5e20; margin: 0 0 10px 0; font-size: 1.8rem; }
         .subtitle { color: #666; margin-bottom: 30px; font-size: 0.95rem; }
 
-        .input-group {
-          position: relative;
-          margin-bottom: 20px;
-          text-align: left;
-        }
-
+        .input-group { position: relative; margin-bottom: 20px; text-align: left; }
         .input-group label {
           display: block;
           font-size: 0.8rem;
@@ -80,18 +101,16 @@ function Login() {
         input:focus {
           border-color: #2e7d32;
           box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
-          background: #fff;
         }
 
         .password-toggle {
           position: absolute;
-          right: 15px;
-          top: 38px;
+          right: 35px;
+          top: 40px;
           cursor: pointer;
           font-size: 0.8rem;
-          color: #666;
+          color: #000000;
           font-weight: 600;
-          user-select: none;
         }
 
         .login-btn {
@@ -106,27 +125,15 @@ function Login() {
           cursor: pointer;
           transition: all 0.3s ease;
           margin-top: 10px;
-          box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
         }
 
         .login-btn:hover {
           background: #1b5e20;
           transform: translateY(-2px);
-          box-shadow: 0 6px 15px rgba(46, 125, 50, 0.3);
         }
 
-        .footer-text {
-          margin-top: 25px;
-          font-size: 0.9rem;
-          color: #666;
-        }
-
-        .footer-text span {
-          color: #2e7d32;
-          font-weight: 700;
-          cursor: pointer;
-          text-decoration: underline;
-        }
+        .footer-text { margin-top: 25px; font-size: 0.9rem; color: #666; }
+        .footer-text span { color: #2e7d32; font-weight: 700; cursor: pointer; text-decoration: underline; }
       `}</style>
 
       <div className="login-card">

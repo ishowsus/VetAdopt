@@ -55,7 +55,7 @@ function Home() {
         .hero button { 
           padding: 15px 40px; 
           background: #ffc107; 
-          color: #1b5e20; 
+          color: #55420f; 
           border: none; 
           border-radius: 50px; 
           font-weight: bold; 
@@ -118,7 +118,7 @@ function Home() {
 
       {/* PET CAROUSEL */}
       <section className="carousel-section">
-        <h2 style={{textAlign: 'center', color: '#2e7d32', marginBottom: '40px'}}>Meet Our Featured Residents</h2>
+        <h2 style={{textAlign: 'center', color: '#55420f', marginBottom: '40px'}}>Meet Our Featured Residents</h2>
         <div className="nav-btn prev-btn" onClick={() => setCurrentPet(p => (p === 0 ? PETS.length - 1 : p - 1))}>←</div>
         <div className="carousel-track">
           {PETS.map(pet => (
@@ -126,7 +126,7 @@ function Home() {
               <div className="pet-card-large">
                 <img src={pet.img} alt={pet.name} />
                 <div className="pet-details">
-                  <h3 style={{fontSize: '2rem', color: '#1b5e20', margin: '0 0 10px'}}>{pet.name}</h3>
+                  <h3 style={{fontSize: '2rem', color: '#55420f', margin: '0 0 10px'}}>{pet.name}</h3>
                   <p style={{fontSize: '1.1rem', color: '#666'}}>{pet.desc}</p>
                   <button style={{marginTop: '20px', padding: '12px 25px', background: '#2e7d32', color: 'white', borderRadius: '8px', cursor:'pointer', border:'none'}}>Learn More</button>
                 </div>
@@ -158,10 +158,6 @@ function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer style={{background: '#1b5e20', color: 'white', padding: '50px 20px', textAlign: 'center'}}>
-        <p>© 2026 VetAdopt - Making the world a better place, one paw at a time.</p>
-      </footer>
     </div>
   );
 }
