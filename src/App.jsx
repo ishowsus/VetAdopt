@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Chatbot from "./components/Chatbot";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -118,9 +119,11 @@ function App() {
       </main>
 
       <Footer />
+      
+      {/* Chatbot - appears on all pages, passes user for personalized responses */}
+      <Chatbot user={user} />
     </div>
   );
 }
 
 export default App;
-  
