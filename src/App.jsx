@@ -22,6 +22,22 @@ import Users from "./pages/admin/Users";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 
+// Vet Pages & Layout
+import VetLayout from "./layouts/VetLayout";
+import VetDashboard from "./pages/veterinarian/VetDashboard";
+import Patients from "./pages/veterinarian/Patients";
+import Appointment from "./pages/veterinarian/Appointment";
+import MedicalRecords from "./pages/veterinarian/MedicalRecords";
+import VetProfile from "./pages/veterinarian/VetProfile";
+
+// Shelter Pages & Layout
+import ShelterLayout from "./layouts/ShelterLayout";
+import ShelterDashboard from "./pages/Shelter/ShelterDashboard";
+import ShelterPets from "./pages/Shelter/Pets";
+import AdoptionRequests from "./pages/Shelter/AdoptionRequests";
+import Donations from "./pages/Shelter/Donations";
+import ShelterProfile from "./pages/Shelter/ShelterProfile";
+
 // ProtectedRoute wrapper
 const ProtectedRoute = ({ user, children, roles }) => {
   if (!user) return <Navigate to="/login" replace />;
@@ -101,6 +117,54 @@ function App() {
               element={
                 <div style={{ padding: "100px", textAlign: "center" }}>
                   <h2>Admin Page Not Found 🐾</h2>
+                </div>
+              }
+            />
+          </Route>
+
+          {/* Vet Routes */}
+          <Route
+            path="/vet/*"
+            element={
+              <ProtectedRoute user={user} roles={["veterinarian"]}>
+                <VetLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<VetDashboard />} />
+            <Route path="patients" element={<Patients />} />
+            <Route path="appointments" element={<Appointment />} />
+            <Route path="medical-records" element={<MedicalRecords />} />
+            <Route path="profile" element={<VetProfile />} />
+            <Route
+              path="*"
+              element={
+                <div style={{ padding: "100px", textAlign: "center" }}>
+                  <h2>Vet Page Not Found 🐾</h2>
+                </div>
+              }
+            />
+          </Route>
+
+          {/* Shelter Routes */}
+          <Route
+            path="/shelter/*"
+            element={
+              <ProtectedRoute user={user} roles={["shelter"]}>
+                <ShelterLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<ShelterDashboard />} />
+            <Route path="pets" element={<ShelterPets />} />
+            <Route path="adoption-requests" element={<AdoptionRequests />} />
+            <Route path="donations" element={<Donations />} />
+            <Route path="profile" element={<ShelterProfile />} />
+            <Route
+              path="*"
+              element={
+                <div style={{ padding: "100px", textAlign: "center" }}>
+                  <h2>Shelter Page Not Found 🐾</h2>
                 </div>
               }
             />

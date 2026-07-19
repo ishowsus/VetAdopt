@@ -1,50 +1,148 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+
 // Firebase imports
-import { auth, db } from "../Firebase"; 
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../Firebase";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 function Login() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // --- FIXED: Firebase Logic with Role Support ---
-  const handleLogin = async () => {
-    if (!email || !password) return alert("Please fill in all fields");
+  // Map Firebase auth error codes to friendlier messages
+  const getAuthErrorMessage = (error) => {
+    switch (error.code) {
+      case "auth/invalid-email":
+        return "That email address doesn't look right.";
+      case "auth/user-not-found":
+        return "No account found with this email.";
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        return "Incorrect email or password.";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please wait a moment and try again.";
+      case "auth/user-disabled":
+        return "This account has been disabled.";
+      default:
+        return "Something went wrong. Please try again.";
+    }
+  };
 
-    try {
-      // 1. Sign in with Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+  // Login Function
+const handleLogin = async (e) => {
+  e?.preventDefault();
 
-      // 2. Fetch role from Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const role = userDoc.data()?.role || "user"; // default to 'user'
+  if (loading) return;
 
-      // 3. Store user info in localStorage
-      const userData = {
+  if (!email || !password) {
+    setErrorMsg("Please fill in all fields.");
+    return;
+  }
+
+  setErrorMsg("");
+  setLoading(true);
+
+  try {
+    // Sign in with Firebase
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    const user = userCredential.user;
+
+    // Get user data from Firestore
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+
+    if (!userDoc.exists()) {
+      throw new Error("User data not found.");
+    }
+
+    const userData = userDoc.data();
+
+    const role = userData.role || "adopter";
+    const status = userData.status || "approved";
+
+    // Check if account needs admin approval
+    if (
+      (role === "veterinarian" || role === "shelter") &&
+      status !== "approved"
+    ) {
+      setErrorMsg(
+        "Your account is waiting for administrator approval."
+      );
+      return;
+    }
+
+    // Save logged in user
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
         uid: user.uid,
         email: user.email,
-        role, // important for admin routes
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
+        role,
+        status,
+      })
+    );
 
-      // 4. Trigger authChange event so Navbar / ProtectedRoute updates
-      window.dispatchEvent(new Event("authChange"));
+    // Notify App.jsx
+    window.dispatchEvent(new Event("authChange"));
 
-      // 5. Redirect based on role
-      if (role === "admin") {
+    // Redirect based on role
+    switch (role) {
+      case "admin":
         navigate("/admin/dashboard");
-      } else {
-        navigate("/profile");
-      }
+        break;
 
+      case "veterinarian":
+        navigate("/vet/dashboard");
+        break;
+
+      case "shelter":
+        navigate("/shelter/dashboard");
+        break;
+
+      default:
+        navigate("/profile");
+    }
+  } catch (error) {
+    console.error(error);
+
+    if (error.code) {
+      setErrorMsg(getAuthErrorMessage(error));
+    } else {
+      setErrorMsg(error.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Forgot Password Function
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMsg("Please enter your email first.");
+      return;
+    }
+
+    setErrorMsg("");
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent! Please check your inbox.");
     } catch (error) {
       console.error(error);
-      alert("Invalid email or password. Please try again.");
+      setErrorMsg(getAuthErrorMessage(error));
     }
   };
 
@@ -56,123 +154,192 @@ function Login() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-          font-family: 'Inter', sans-serif;
-          padding: 20px;
+          background: linear-gradient(135deg,#e8f5e9,#c8e6c9);
+          padding:20px;
+          font-family: Arial, sans-serif;
         }
 
-        .login-card {
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(10px);
-          width: 100%;
-          max-width: 420px;
-          padding: 50px 40px;
-          border-radius: 30px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-          text-align: center;
-          border: 1px solid rgba(255,255,255,0.3);
+        .login-card{
+          background:white;
+          width:100%;
+          max-width:420px;
+          padding:40px;
+          border-radius:20px;
+          box-shadow:0 10px 30px rgba(0,0,0,.1);
         }
 
-        .brand-logo { font-size: 2.5rem; margin-bottom: 10px; display: inline-block; }
-        h2 { color: #1b5e20; margin: 0 0 10px 0; font-size: 1.8rem; }
-        .subtitle { color: #666; margin-bottom: 30px; font-size: 0.95rem; }
-
-        .input-group { position: relative; margin-bottom: 20px; text-align: left; }
-        .input-group label {
-          display: block;
-          font-size: 0.8rem;
-          font-weight: 700;
-          color: #2e7d32;
-          margin-bottom: 8px;
-          margin-left: 5px;
+        h2{
+          text-align:center;
+          color:#2e7d32;
+          margin-bottom:5px;
         }
 
-        input {
-          width: 100%;
-          padding: 14px 18px;
-          border-radius: 12px;
-          border: 2px solid #e0e0e0;
-          font-size: 1rem;
-          box-sizing: border-box;
-          transition: all 0.3s ease;
-          outline: none;
+        .subtitle{
+          text-align:center;
+          color:#666;
+          margin-bottom:25px;
         }
 
-        input:focus {
-          border-color: #2e7d32;
-          box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
+        .error-banner{
+          background:#fdecea;
+          color:#b3261e;
+          border:1px solid #f5c6c2;
+          border-radius:8px;
+          padding:10px 14px;
+          font-size:14px;
+          margin-bottom:18px;
+          text-align:center;
         }
 
-        .password-toggle {
-          position: absolute;
-          right: 35px;
-          top: 40px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          color: #000000;
-          font-weight: 600;
+        .input-group{
+          margin-bottom:20px;
+          position:relative;
         }
 
-        .login-btn {
-          width: 100%;
-          padding: 16px;
-          background: #2e7d32;
-          color: white;
-          border: none;
-          border-radius: 15px;
-          font-size: 1rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-top: 10px;
+        .input-group label{
+          display:block;
+          margin-bottom:8px;
+          font-weight:bold;
+          color:#2e7d32;
         }
 
-        .login-btn:hover {
-          background: #1b5e20;
-          transform: translateY(-2px);
+        input{
+          width:100%;
+          padding:14px;
+          border-radius:10px;
+          border:2px solid #ddd;
+          box-sizing:border-box;
+          font-size:16px;
         }
 
-        .footer-text { margin-top: 25px; font-size: 0.9rem; color: #666; }
-        .footer-text span { color: #2e7d32; font-weight: 700; cursor: pointer; text-decoration: underline; }
+        input:focus{
+          outline:none;
+          border-color:#2e7d32;
+        }
+
+        .password-toggle{
+          position:absolute;
+          right:10px;
+          top:36px;
+          cursor:pointer;
+          font-size:12px;
+          font-weight:bold;
+          background:none;
+          border:none;
+          color:#2e7d32;
+          padding:8px;
+        }
+
+        .forgot-password{
+          text-align:right;
+          margin-top:-8px;
+          margin-bottom:20px;
+        }
+
+        .forgot-password button{
+          background:none;
+          border:none;
+          padding:0;
+          color:#2e7d32;
+          cursor:pointer;
+          font-size:14px;
+          font-weight:bold;
+        }
+
+        .forgot-password button:hover{
+          text-decoration:underline;
+        }
+
+        .login-btn{
+          width:100%;
+          padding:15px;
+          background:#2e7d32;
+          color:white;
+          border:none;
+          border-radius:12px;
+          cursor:pointer;
+          font-size:16px;
+          font-weight:bold;
+        }
+
+        .login-btn:hover:not(:disabled){
+          background:#1b5e20;
+        }
+
+        .login-btn:disabled{
+          background:#9ccc9f;
+          cursor:not-allowed;
+        }
+
+        .footer-text{
+          margin-top:20px;
+          text-align:center;
+        }
+
+        .footer-text a{
+          color:#2e7d32;
+          font-weight:bold;
+          text-decoration:none;
+        }
+
+        .footer-text a:hover{
+          text-decoration:underline;
+        }
       `}</style>
 
       <div className="login-card">
-        <div className="brand-logo">🐾</div>
-        <h2>Welcome Back</h2>
+        <h2>🐾 Welcome Back</h2>
         <p className="subtitle">Ready to find your new best friend?</p>
 
-        <div className="input-group">
-          <label>EMAIL ADDRESS</label>
-          <input 
-            type="email" 
-            placeholder="name@example.com" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-          />
-        </div>
+        {errorMsg && <div className="error-banner">{errorMsg}</div>}
 
-        <div className="input-group">
-          <label>PASSWORD</label>
-          <input 
-            type={showPassword ? "text" : "password"} 
-            placeholder="••••••••" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-          />
-          <span 
-            className="password-toggle" 
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? "HIDE" : "SHOW"}
-          </span>
-        </div>
+        <form onSubmit={handleLogin} noValidate>
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-        <button className="login-btn" onClick={handleLogin}>
-          Sign In
-        </button>
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "HIDE" : "SHOW"}
+            </button>
+          </div>
+
+          <div className="forgot-password">
+            <button type="button" onClick={handleForgotPassword}>
+              Forgot Password?
+            </button>
+          </div>
+
+          <button className="login-btn" type="submit" disabled={loading}>
+            {loading ? "Signing In..." : "Sign In"}
+          </button>
+        </form>
 
         <p className="footer-text">
-          New to VetAdopt? <span onClick={() => navigate("/register")}>Create account</span>
+          <Link to="/register">Create Account</Link>
         </p>
       </div>
     </div>
