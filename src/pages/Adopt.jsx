@@ -87,7 +87,16 @@ export default function Adopt() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [modalStep, setModalStep] = useState("login");
   const [authData, setAuthData] = useState({ name: "", email: "", password: "" });
-  const [contactData, setContactData] = useState({ phone: "", notes: "" });
+const [contactData, setContactData] = useState({
+  fullName: "",
+  age: "",
+  address: "",
+  occupation: "",
+  phone: "",
+  houseType: "",
+  petExperience: "",
+  reason: "",
+});
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
@@ -138,27 +147,50 @@ export default function Adopt() {
     setLoading(false);
   };
 
-  const handleSubmit = async () => {
-    if (!contactData.phone.trim()) { setAuthError("Phone number is required."); return; }
-    setLoading(true);
-    setAuthError("");
-    try {
-      await addDoc(collection(db, "applications"), {
-        petId: selectedPet.id,
-        petName: selectedPet.name,
-        petType: selectedPet.type,
-        phone: contactData.phone,
-        notes: contactData.notes,
-        userId: auth.currentUser.uid,
-        email: auth.currentUser.email,
-        status: "Pending",
-        createdAt: serverTimestamp(),
-      });
-      setModalStep("success");
-    } catch (err) { setAuthError(err.message); }
-    setLoading(false);
-  };
+ const handleSubmit = async () => {
+  if (!contactData.phone.trim()) {
+    setAuthError("Phone number is required.");
+    return;
+  }
 
+  setLoading(true);
+  setAuthError("");
+
+  try {
+    console.log("Current User:", auth.currentUser);
+    await addDoc(collection(db, "applications"), {
+      petId: selectedPet.id,
+      petName: selectedPet.name,
+      petType: selectedPet.type,
+
+      userId: auth.currentUser.uid,
+      fullName: contactData.fullName,
+      age: contactData.age,
+      address: contactData.address,
+      occupation: contactData.occupation,
+      phone: contactData.phone,
+      email: auth.currentUser.email,
+
+      houseType: contactData.houseType,
+      petExperience: contactData.petExperience,
+      reason: contactData.reason,
+
+      status: "Pending",
+      createdAt: serverTimestamp(),
+    });
+    await addDoc(collection(db, "notifications"), {
+  userId: auth.currentUser.uid,
+  text: `Your adoption application for ${selectedPet.name} has been submitted successfully and is now under review.`,
+  createdAt: serverTimestamp(),
+});
+
+    setModalStep("success");
+  } catch (err) {
+  console.error("Firestore Error:", err);
+  setAuthError(err.message);
+    setLoading(false);
+  }
+};
   return (
     <div className="adopt-root">
       <style>{`
@@ -458,19 +490,75 @@ export default function Adopt() {
             )}
 
             {/* Adopt form */}
-            {modalStep === "adopt" && (
-              <>
-                <h2>Adopt {selectedPet.name}</h2>
-                <p className="ad-modal-sub">Tell us a little about yourself and your home.</p>
-                <label className="ad-label">Phone Number</label>
-                <ModalInput type="tel" placeholder="+63 917 000 0000" value={contactData.phone} onChange={(e) => setContactData({ ...contactData, phone: e.target.value })} />
-                <label className="ad-label">About Your Home</label>
-                <ModalInput rows={4} placeholder="Describe your living situation, experience with pets, why you'd love this pet…" value={contactData.notes} onChange={(e) => setContactData({ ...contactData, notes: e.target.value })} />
-                {authError && <p className="ad-error">⚠️ {authError}</p>}
-                <button className="ad-submit-btn" onClick={handleSubmit} disabled={loading}>{loading ? "Submitting…" : "Submit Application"}</button>
-              </>
-            )}
+{modalStep === "adopt" && (
+  <>
+    <h2>Adopt {selectedPet.name}</h2>
+    <p className="ad-modal-sub">
+      Tell us a little about yourself and your home.
+    </p>
 
+    <label className="ad-label">Full Name</label>
+    <ModalInput
+      placeholder="Juan Dela Cruz"
+      value={contactData.fullName}
+      onChange={(e) =>
+        setContactData({ ...contactData, fullName: e.target.value })
+      }
+    />
+
+    <label className="ad-label">Age</label>
+    <ModalInput
+      type="number"
+      placeholder="25"
+      value={contactData.age}
+      onChange={(e) =>
+        setContactData({ ...contactData, age: e.target.value })
+      }
+    />
+
+    <label className="ad-label">Address</label>
+    <ModalInput
+      placeholder="Complete Address"
+      value={contactData.address}
+      onChange={(e) =>
+        setContactData({ ...contactData, address: e.target.value })
+      }
+    />
+
+    <label className="ad-label">Phone Number</label>
+    <ModalInput
+      type="tel"
+      placeholder="+63 917 000 0000"
+      value={contactData.phone}
+      onChange={(e) =>
+        setContactData({ ...contactData, phone: e.target.value })
+      }
+    />
+
+    <label className="ad-label">About Your Home</label>
+    <ModalInput
+      rows={4}
+      placeholder="Describe your living situation..."
+      value={contactData.notes}
+      onChange={(e) =>
+        setContactData({ ...contactData, notes: e.target.value })
+      }
+    />
+
+    {authError && <p className="ad-error">⚠️ {authError}</p>}
+
+    {/* Button stays LAST */}
+    <button
+      className="ad-submit-btn"
+      onClick={handleSubmit}
+      disabled={loading}
+    >
+      {loading ? "Submitting..." : "Submit Application"}
+    </button>
+  </>
+)}
+              
+           
             {/* Success */}
             {modalStep === "success" && (
               <div className="ad-success">
@@ -480,6 +568,7 @@ export default function Adopt() {
                 <button className="ad-submit-btn" onClick={closeModal}>Back to Pets</button>
               </div>
             )}
+           
           </div>
         </div>
       )}
