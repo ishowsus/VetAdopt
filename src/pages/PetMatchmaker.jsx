@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // ─── Quiz Data ────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ const RESULTS = {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function PetMatchmaker() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0); // 0 = intro
+  const [step, setStep] = useState(0); // 0 = intro, 1 = quiz, 2 = result
   const [questionIndex, setQuestionIndex] = useState(0);
   const [scores, setScores] = useState({ dog: 0, cat: 0, rabbit: 0, fish: 0 });
   const [result, setResult] = useState(null);
@@ -124,7 +124,7 @@ export default function PetMatchmaker() {
   const [selectedOption, setSelectedOption] = useState(null);
 
   const total = QUESTIONS.length;
-  const progress = step === 1 ? ((questionIndex) / total) * 100 : step === 2 ? 100 : 0;
+  const progress = step === 1 ? (questionIndex / total) * 100 : step === 2 ? 100 : 0;
 
   const handleAnswer = (score, idx) => {
     if (animating) return;
@@ -163,6 +163,7 @@ export default function PetMatchmaker() {
   };
 
   const res = result ? RESULTS[result] : null;
+  const currentQ = QUESTIONS[questionIndex];
 
   return (
     <div className="pm-root">
@@ -171,7 +172,6 @@ export default function PetMatchmaker() {
         @keyframes floatUp { from { opacity:0; transform:translateY(24px) } to { opacity:1; transform:translateY(0) } }
         @keyframes popIn { 0% { opacity:0; transform:scale(0.85) } 100% { opacity:1; transform:scale(1) } }
         @keyframes pulse { 0%,100% { transform:scale(1) } 50% { transform:scale(1.06) } }
-        @keyframes shimmer { 0% { background-position:200% center } 100% { background-position:-200% center } }
         @keyframes barGrow { from { width:0 } }
         @keyframes bounce { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-10px) } }
         @keyframes fadeSlide { from { opacity:0; transform:translateX(30px) } to { opacity:1; transform:translateX(0) } }
@@ -197,7 +197,6 @@ export default function PetMatchmaker() {
           animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
         }
 
-        /* ── Header band ── */
         .pm-header {
           background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
           padding: 28px 36px 22px;
@@ -215,7 +214,6 @@ export default function PetMatchmaker() {
         }
         .pm-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.7); font-weight:600; }
 
-        /* ── Progress ── */
         .pm-progress-wrap { margin-top: 4px; }
         .pm-progress-track {
           height: 7px; background: rgba(255,255,255,0.2); border-radius: 99px; overflow:hidden;
@@ -230,10 +228,8 @@ export default function PetMatchmaker() {
           font-weight:700; text-align:right;
         }
 
-        /* ── Body ── */
         .pm-body { padding: 36px 36px 40px; }
 
-        /* ── Intro ── */
         .pm-intro { text-align:center; animation: floatUp 0.5s ease; }
         .pm-intro-emoji { font-size:4.5rem; animation: pulse 2s ease-in-out infinite; margin-bottom:16px; display:block; }
         .pm-intro h2 {
@@ -256,7 +252,6 @@ export default function PetMatchmaker() {
         }
         .pm-start-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(46,125,50,0.4); }
 
-        /* ── Question ── */
         .pm-question { animation: fadeSlide 0.35s ease; }
         .pm-q-emoji { font-size:2.8rem; margin-bottom:12px; display:block; }
         .pm-q-counter { font-size:0.72rem; font-weight:800; color:#81c784; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px; }
@@ -282,7 +277,6 @@ export default function PetMatchmaker() {
         .pm-opt-btn.selected::before { transform:scaleY(1); }
         .pm-opt-btn:disabled { cursor:not-allowed; opacity:0.7; }
 
-        /* ── Result ── */
         .pm-result { text-align:center; animation: floatUp 0.5s ease; }
         .pm-result-emoji-wrap {
           width:110px; height:110px; border-radius:50%; margin:0 auto 16px;
@@ -324,22 +318,9 @@ export default function PetMatchmaker() {
           flex:1; min-width:140px; padding:15px 24px; border-radius:99px;
           border:2px solid #e0e0e0; background:white; color:#555;
           font-size:0.9rem; font-weight:800; cursor:pointer;
-          font-family:'Nunito',sans-serif; transition:all 0.25s;
+          font-family:'Nunito',sans-serif; transition:all 0.2s;
         }
-        .pm-ghost-btn:hover { border-color:#bdbdbd; background:#f5f5f5; }
-
-        /* ── Score bar (subtle) ── */
-        .pm-score-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-        .pm-score-label { font-size:0.78rem; font-weight:700; width:60px; color:#555; }
-        .pm-score-track { flex:1; height:6px; background:#eee; border-radius:99px; overflow:hidden; }
-        .pm-score-bar { height:100%; border-radius:99px; transition:width 1s ease 0.3s; }
-
-        @media (max-width:480px) {
-          .pm-body { padding:28px 22px 32px; }
-          .pm-header { padding:22px 24px 18px; }
-          .pm-q-text { font-size:1.15rem; }
-          .pm-result-name { font-size:1.9rem; }
-        }
+        .pm-ghost-btn:hover { background:#f5f5f5; border-color:#ccc; }
       `}</style>
 
       <div className="pm-card">
@@ -349,61 +330,56 @@ export default function PetMatchmaker() {
             <span className="pm-logo">🐾</span>
             <div>
               <div className="pm-title">Pet Matchmaker</div>
-              <div className="pm-subtitle">Find your perfect companion in Cebu</div>
+              <div className="pm-subtitle">Find your perfect companion</div>
             </div>
           </div>
-          {step === 1 && (
+          {step > 0 && (
             <div className="pm-progress-wrap">
               <div className="pm-progress-track">
                 <div className="pm-progress-fill" style={{ width: `${progress}%` }} />
               </div>
               <div className="pm-progress-label">
-                Question {questionIndex + 1} of {total}
+                {step === 1 ? `Question ${questionIndex + 1} of ${total}` : "Match Complete!"}
               </div>
-            </div>
-          )}
-          {step === 2 && (
-            <div className="pm-progress-wrap">
-              <div className="pm-progress-track">
-                <div className="pm-progress-fill" style={{ width: "100%" }} />
-              </div>
-              <div className="pm-progress-label">Complete! 🎉</div>
             </div>
           )}
         </div>
 
-        {/* Body */}
+        {/* Body Content */}
         <div className="pm-body">
-
-          {/* ── Intro ── */}
+          {/* Step 0: Intro */}
           {step === 0 && (
             <div className="pm-intro">
-              <span className="pm-intro-emoji">🐾</span>
-              <h2>Which pet is meant for you?</h2>
-              <p>Answer {total} quick questions and we'll match you with your ideal furry (or finned!) companion based on your lifestyle.</p>
+              <span className="pm-intro-emoji">🐕🐱🐰</span>
+              <h2>Which Pet Suits Your Lifestyle?</h2>
+              <p>Answer 6 quick questions to discover whether a dog, cat, rabbit, or fish is your ideal match.</p>
+
               <div className="pm-pets-preview">
-                {Object.entries(RESULTS).map(([key, r]) => (
-                  <div key={key} className="pm-pet-chip">{r.emoji} {r.name}</div>
-                ))}
+                <span className="pm-pet-chip">🐶 Dogs</span>
+                <span className="pm-pet-chip">🐱 Cats</span>
+                <span className="pm-pet-chip">🐰 Rabbits</span>
+                <span className="pm-pet-chip">🐠 Fish</span>
               </div>
+
               <button className="pm-start-btn" onClick={() => setStep(1)}>
-                Find My Match →
+                Start Quiz →
               </button>
             </div>
           )}
 
-          {/* ── Question ── */}
-          {step === 1 && (
-            <div className="pm-question" key={questionIndex}>
-              <span className="pm-q-emoji">{QUESTIONS[questionIndex].emoji}</span>
-              <div className="pm-q-counter">Question {questionIndex + 1} / {total}</div>
-              <div className="pm-q-text">{QUESTIONS[questionIndex].text}</div>
+          {/* Step 1: Question Flow */}
+          {step === 1 && currentQ && (
+            <div className="pm-question" key={currentQ.id}>
+              <span className="pm-q-emoji">{currentQ.emoji}</span>
+              <div className="pm-q-counter">Question {questionIndex + 1} of {total}</div>
+              <h3 className="pm-q-text">{currentQ.text}</h3>
+
               <div className="pm-options">
-                {QUESTIONS[questionIndex].options.map((opt, i) => (
+                {currentQ.options.map((opt, idx) => (
                   <button
-                    key={i}
-                    className={`pm-opt-btn${selectedOption === i ? " selected" : ""}`}
-                    onClick={() => handleAnswer(opt.score, i)}
+                    key={idx}
+                    className={`pm-opt-btn ${selectedOption === idx ? "selected" : ""}`}
+                    onClick={() => handleAnswer(opt.score, idx)}
                     disabled={animating}
                   >
                     {opt.text}
@@ -413,88 +389,59 @@ export default function PetMatchmaker() {
             </div>
           )}
 
-          {/* ── Result ── */}
+          {/* Step 2: Results View */}
           {step === 2 && res && (
             <div className="pm-result">
               <div
                 className="pm-result-emoji-wrap"
-                style={{ background: res.light, border: `3px solid ${res.color}20` }}
+                style={{ background: res.light }}
               >
                 {res.emoji}
               </div>
 
               <div className="pm-match-label" style={{ color: res.color }}>
-                🎉 It's a Match!
+                100% Match Found
               </div>
-              <div className="pm-result-name">{res.name}</div>
+              <h2 className="pm-result-name">{res.name}</h2>
               <div className="pm-result-tagline">{res.tagline}</div>
-
               <p className="pm-result-desc">{res.description}</p>
 
-              {/* Traits */}
+              {/* Personality traits */}
               <div className="pm-traits">
-                {res.traits.map((t, i) => (
+                {res.traits.map((t, idx) => (
                   <span
-                    key={i}
+                    key={idx}
                     className="pm-trait"
                     style={{ background: res.light, color: res.color }}
                   >
-                    {t}
+                    • {t}
                   </span>
                 ))}
               </div>
 
-              {/* Care tips */}
-              <div className="pm-care" style={{ background: res.light }}>
-                <div className="pm-care-title" style={{ color: res.color }}>🌿 Care Essentials</div>
+              {/* Care Requirements */}
+              <div className="pm-care" style={{ background: "#f8faf8" }}>
+                <div className="pm-care-title" style={{ color: res.color }}>
+                  Care Checklist
+                </div>
                 <ul>
-                  {res.care.map((c, i) => (
-                    <li key={i} style={{ "--check-color": res.color }}>
-                      <span style={{ color: res.color }}>✓</span> {c}
-                    </li>
+                  {res.care.map((item, idx) => (
+                    <li key={idx}>{item}</li>
                   ))}
                 </ul>
               </div>
 
-              {/* Score breakdown */}
-              <div style={{ marginBottom: "24px" }}>
-                <div style={{ fontSize:"0.72rem", fontWeight:800, letterSpacing:"0.1em", textTransform:"uppercase", color:"#aaa", marginBottom:"10px" }}>
-                  Compatibility Scores
-                </div>
-                {Object.entries(scores)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([pet, sc]) => {
-                    const max = Math.max(...Object.values(scores));
-                    const r = RESULTS[pet];
-                    return (
-                      <div key={pet} className="pm-score-row">
-                        <span className="pm-score-label">{r.emoji} {r.name}</span>
-                        <div className="pm-score-track">
-                          <div
-                            className="pm-score-bar"
-                            style={{
-                              width: `${(sc / max) * 100}%`,
-                              background: r.color,
-                              opacity: pet === result ? 1 : 0.35,
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontSize:"0.72rem", fontWeight:800, color:"#aaa", width:"28px", textAlign:"right" }}>{sc}</span>
-                      </div>
-                    );
-                  })}
-              </div>
-
+              {/* Action Buttons */}
               <div className="pm-result-btns">
                 <button
                   className="pm-primary-btn"
-                  style={{ background: `linear-gradient(135deg,${res.color},${res.color}cc)` }}
+                  style={{ background: res.color }}
                   onClick={() => navigate("/adopt")}
                 >
-                  View Available {res.name}s →
+                  Adopt a {res.name} Now →
                 </button>
                 <button className="pm-ghost-btn" onClick={restart}>
-                  Retake Quiz
+                  Retake Quiz ↺
                 </button>
               </div>
             </div>

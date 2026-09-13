@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
-import Chatbot from "./components/Chatbot";
+import EnhancedChatbot from "./components/EnhancedChatbot"; // 1. Updated Import
 
 // Public Pages
 import Home from "./pages/Home";
@@ -45,7 +45,6 @@ const ProtectedRoute = ({ user, children, roles }) => {
   return children;
 };
 
-
 function App() {
   const navigate = useNavigate();
 
@@ -63,7 +62,7 @@ function App() {
 
     window.addEventListener("authChange", checkUser);
 
-    // Optional: sync across browser tabs
+    // Sync across browser tabs
     const handleStorage = (e) => {
       if (e.key === "user") checkUser();
     };
@@ -75,121 +74,155 @@ function App() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    window.dispatchEvent(new Event("authChange"));
-    navigate("/login");
-  };
-
   return (
-    <div className="app-container">
-      <Navbar user={user} onLogout={handleLogout} />
+    <div className="app-shell">
+      <style>{`
+        /* ── Dynamic Layout Engine ── */
+        .app-shell {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
 
-      <main className="content-area" style={{ minHeight: "80vh" }}>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        .main-wrapper {
+          display: flex;
+          flex: 1;
+          width: 100%;
+        }
 
-          {/* Protected User Routes */}
-          <Route path="/adopt" element={<ProtectedRoute user={user}><Adopt /></ProtectedRoute>} />
-          <Route path="/vets" element={<ProtectedRoute user={user}><VetMap /></ProtectedRoute>} />
-          <Route path="/quiz" element={<ProtectedRoute user={user}><PetMatchmaker /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute user={user}><ProfileSettings /></ProtectedRoute>} />
-          <Route path="/donate" element={<ProtectedRoute user={user}><Donate /></ProtectedRoute>} />
+        .content-area {
+          flex: 1;
+          min-height: 80vh;
+          margin-left: var(--sidebar-width, 260px);
+          transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          width: calc(100% - var(--sidebar-width, 260px));
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
 
-          {/* Admin Routes */}
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute user={user} roles={["admin"]}>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
+        /* Prevent content from breaking page boundaries when sidebar changes */
+        .content-area > * {
+          max-width: 100%;
+        }
+
+        /* ── Mobile Layout Adjustments ── */
+        @media (max-width: 768px) {
+          .content-area {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
+
+      <div className="main-wrapper">
+        {/* Render Sidebar instead of standard top Navbar */}
+        <Sidebar user={user} />
+
+        <main className="content-area">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Protected User Routes */}
+            <Route path="/adopt" element={<ProtectedRoute user={user}><Adopt /></ProtectedRoute>} />
+            <Route path="/vets" element={<ProtectedRoute user={user}><VetMap /></ProtectedRoute>} />
+            <Route path="/quiz" element={<ProtectedRoute user={user}><PetMatchmaker /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute user={user}><ProfileSettings /></ProtectedRoute>} />
+            <Route path="/donate" element={<ProtectedRoute user={user}><Donate /></ProtectedRoute>} />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute user={user} roles={["admin"]}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="users" element={<Users />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
+              <Route
+                path="*"
+                element={
+                  <div style={{ padding: "100px", textAlign: "center" }}>
+                    <h2>Admin Page Not Found 🐾</h2>
+                  </div>
+                }
+              />
+            </Route>
+
+            {/* Vet Routes */}
+            <Route
+              path="/vet/*"
+              element={
+                <ProtectedRoute user={user} roles={["veterinarian"]}>
+                  <VetLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="dashboard" element={<VetDashboard />} />
+              <Route path="patients" element={<Patients />} />
+              <Route path="appointments" element={<Appointment />} />
+              <Route path="medical-records" element={<MedicalRecords />} />
+              <Route path="profile" element={<VetProfile />} />
+              <Route
+                path="*"
+                element={
+                  <div style={{ padding: "100px", textAlign: "center" }}>
+                    <h2>Vet Page Not Found 🐾</h2>
+                  </div>
+                }
+              />
+            </Route>
+
+            {/* Shelter Routes */}
+            <Route
+              path="/shelter/*"
+              element={
+                <ProtectedRoute user={user} roles={["shelter"]}>
+                  <ShelterLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="dashboard" element={<ShelterDashboard />} />
+              <Route path="pets" element={<ShelterPets />} />
+              <Route path="adoption-requests" element={<AdoptionRequests />} />
+              <Route path="donations" element={<Donations />} />
+              <Route path="profile" element={<ShelterProfile />} />
+              <Route
+                path="*"
+                element={
+                  <div style={{ padding: "100px", textAlign: "center" }}>
+                    <h2>Shelter Page Not Found 🐾</h2>
+                  </div>
+                }
+              />
+            </Route>
+
+            {/* General 404 */}
             <Route
               path="*"
               element={
                 <div style={{ padding: "100px", textAlign: "center" }}>
-                  <h2>Admin Page Not Found 🐾</h2>
+                  <h2>404 - Not Found 🐾</h2>
                 </div>
               }
             />
-          </Route>
+          </Routes>
 
-          {/* Vet Routes */}
-          <Route
-            path="/vet/*"
-            element={
-              <ProtectedRoute user={user} roles={["veterinarian"]}>
-                <VetLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="dashboard" element={<VetDashboard />} />
-            <Route path="patients" element={<Patients />} />
-            <Route path="appointments" element={<Appointment />} />
-            <Route path="medical-records" element={<MedicalRecords />} />
-            <Route path="profile" element={<VetProfile />} />
-            <Route
-              path="*"
-              element={
-                <div style={{ padding: "100px", textAlign: "center" }}>
-                  <h2>Vet Page Not Found 🐾</h2>
-                </div>
-              }
-            />
-          </Route>
-          
+          {/* Footer now flows naturally inside the main content area */}
+          <Footer />
+        </main>
+      </div>
 
-          {/* Shelter Routes */}
-          <Route
-            path="/shelter/*"
-            element={
-              <ProtectedRoute user={user} roles={["shelter"]}>
-                <ShelterLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="dashboard" element={<ShelterDashboard />} />
-            <Route path="pets" element={<ShelterPets />} />
-            <Route path="adoption-requests" element={<AdoptionRequests />} />
-            <Route path="donations" element={<Donations />} />
-            <Route path="profile" element={<ShelterProfile />} />
-            <Route
-              path="*"
-              element={
-                <div style={{ padding: "100px", textAlign: "center" }}>
-                  <h2>Shelter Page Not Found 🐾</h2>
-                </div>
-              }
-            />
-          </Route>
-          
-
-          {/* General 404 */}
-          <Route
-            path="*"
-            element={
-              <div style={{ padding: "100px", textAlign: "center" }}>
-                <h2>404 - Not Found 🐾</h2>
-              </div>
-            }
-          />
-        </Routes>
-
-      </main>
-
-      <Footer />
-      
-      {/* Chatbot - appears on all pages, passes user for personalized responses */}
-      <Chatbot user={user} />
+      {/* 2. Floating Enhanced Chatbot placed here */}
+      <EnhancedChatbot user={user} />
     </div>
   );
 }

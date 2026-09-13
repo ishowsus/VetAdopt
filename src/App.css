@@ -1,10 +1,55 @@
+/* ── Reset Vite Root Constraints ── */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
 }
 
+/* ── Global Layout Engine ── */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+.main-wrapper {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+/* Dynamically adjusts based on the --sidebar-width variable set in Sidebar.jsx */
+.content-area {
+  flex: 1;
+  min-height: 100vh;
+  margin-left: var(--sidebar-width, 260px);
+  width: calc(100% - var(--sidebar-width, 260px));
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Prevent internal page elements from overflowing during collapse */
+.content-area > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  .content-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ── Utility Classes ── */
 .logo {
   height: 6em;
   padding: 1.5em;
