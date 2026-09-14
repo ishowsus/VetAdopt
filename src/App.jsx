@@ -2,7 +2,11 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
+<<<<<<< HEAD
 import EnhancedChatbot from "./components/EnhancedChatbot";
+=======
+import EnhancedChatbot from "./components/EnhancedChatbot"; // 1. Updated Import
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
 
 // Public Pages
 import Home from "./pages/Home";
@@ -15,10 +19,15 @@ import VetMap from "./pages/VetMap";
 import ProfileSettings from "./pages/ProfileSettings";
 import PetMatchmaker from "./pages/PetMatchmaker";
 
+<<<<<<< HEAD
 // Admin Context & Layout
 import { AdminProvider } from "./layouts/AdminContext";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminAnimals from "./layouts/AdminAnimals"; // <-- Added import
+=======
+// Admin Pages & Layout
+import AdminLayout from "./layouts/AdminLayout";
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
 import Dashboard from "./pages/admin/Dashboard";
 import Users from "./pages/admin/Users";
 import Reports from "./pages/admin/Reports";
@@ -136,20 +145,31 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute user={user}><ProfileSettings /></ProtectedRoute>} />
             <Route path="/donate" element={<ProtectedRoute user={user}><Donate /></ProtectedRoute>} />
 
+<<<<<<< HEAD
             {/* Admin Routes with AdminProvider Wrap */}
+=======
+            {/* Admin Routes */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
             <Route
               path="/admin/*"
               element={
                 <ProtectedRoute user={user} roles={["admin"]}>
+<<<<<<< HEAD
                   <AdminProvider>
                     <AdminLayout />
                   </AdminProvider>
+=======
+                  <AdminLayout />
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
                 </ProtectedRoute>
               }
             >
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="users" element={<Users />} />
+<<<<<<< HEAD
               <Route path="animal" element={<AdminAnimals />} /> {/* <-- Route added here */}
+=======
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
               <Route
@@ -226,10 +246,18 @@ function App() {
         </main>
       </div>
 
+<<<<<<< HEAD
       {/* Floating Enhanced Chatbot */}
+=======
+      {/* 2. Floating Enhanced Chatbot placed here */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
       <EnhancedChatbot user={user} />
     </div>
   );
 }
 
+<<<<<<< HEAD
 export default App;
+=======
+export default App;
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7

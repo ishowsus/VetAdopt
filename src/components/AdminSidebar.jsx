@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/components/AdminSidebar.jsx
 import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef, Suspense } from "react";
@@ -5,6 +6,12 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useAdmin } from "../layouts/AdminContext";
 
 // ─── Design Tokens ───────────────────────────────────────────
+=======
+import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect, Suspense } from "react";
+
+// ─── Design Tokens (keep in sync with Navbar.jsx) ─────────────
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
 const T = {
   primary:       "#3d2b00",
   primaryMid:    "#6b4c11",
@@ -25,6 +32,29 @@ const T = {
   iconBtnBg:     "#f5ede0",
 };
 
+<<<<<<< HEAD
+=======
+// ─── Nav Config ────────────────────────────────────────────────
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    links: [{ to: "/admin/dashboard", label: "Dashboard", icon: "▦" }],
+  },
+  {
+    label: "Manage",
+    links: [
+      { to: "/admin/users",   label: "Users",   icon: "⊹", badge: 3 },
+      { to: "/admin/reports", label: "Reports", icon: "◈" },
+      { to: "/admin/animals", label: "Animals", icon: "🐾" },
+    ],
+  },
+  {
+    label: "System",
+    links: [{ to: "/admin/settings", label: "Settings", icon: "◎" }],
+  },
+];
+
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
 const ROUTE_TITLES = {
   "/admin/dashboard": "Dashboard",
   "/admin/users":     "Users",
@@ -40,13 +70,21 @@ const NOTIFICATIONS = [
   { id: 4, text: "New user registered",             time: "1d ago",  unread: false },
 ];
 
+<<<<<<< HEAD
+=======
+// ─── Skeleton Loader ───────────────────────────────────────────
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
 const SkeletonLoader = () => (
   <div style={{ padding: "12px" }}>
     {[1, 2, 3].map((i) => (
       <div
         key={i}
         style={{
+<<<<<<< HEAD
           height:          i === 1 ? "28px" : "72px",
+=======
+          height:         i === 1 ? "28px" : "72px",
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
           borderRadius:   "10px",
           marginBottom:   "16px",
           width:          i === 2 ? "65%" : "100%",
@@ -65,15 +103,21 @@ const SkeletonLoader = () => (
   </div>
 );
 
+<<<<<<< HEAD
 const AdminSidebar = () => {
   // Consume real-time context data
   const { pendingCount, currentUser } = useAdmin();
 
+=======
+// ─── Main Component ────────────────────────────────────────────
+const AdminSidebar = () => {
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
   const [sidebarOpen,      setSidebarOpen]      = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifOpen,        setNotifOpen]        = useState(false);
   const [notifications,    setNotifications]    = useState(NOTIFICATIONS);
 
+<<<<<<< HEAD
   const notifRef  = useRef(null);
   const location  = useLocation();
   const pageTitle = ROUTE_TITLES[location.pathname] ?? "Admin";
@@ -103,6 +147,12 @@ const AdminSidebar = () => {
     },
   ];
 
+=======
+  const location    = useLocation();
+  const pageTitle   = ROUTE_TITLES[location.pathname] ?? "Admin";
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
   const crumbs = location.pathname
     .split("/")
     .filter(Boolean)
@@ -112,6 +162,7 @@ const AdminSidebar = () => {
     }));
 
   useEffect(() => {
+<<<<<<< HEAD
     setSidebarOpen(false);
     setNotifOpen(false);
   }, [location.pathname]);
@@ -135,6 +186,13 @@ const AdminSidebar = () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onClickOutside);
     };
+=======
+    const onKey = (e) => {
+      if (e.key === "Escape") { setSidebarOpen(false); setNotifOpen(false); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
   }, []);
 
   useEffect(() => {
@@ -168,6 +226,7 @@ const AdminSidebar = () => {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&display=swap');
+<<<<<<< HEAD
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         .vet-admin-wrapper { display: flex; min-height: 100vh; font-family: 'DM Sans', sans-serif; background: ${T.content}; }
         .vet-sidebar { width: 224px; background: ${T.sidebar}; border-right: 1px solid ${T.sidebarBorder}; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow: hidden; flex-shrink: 0; transition: width 0.25s ease, transform 0.3s ease; }
@@ -231,28 +290,462 @@ const AdminSidebar = () => {
         }
       `}</style>
 
+=======
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .vet-admin-wrapper {
+          display: flex;
+          min-height: 100vh;
+          font-family: 'DM Sans', sans-serif;
+          background: ${T.content};
+        }
+
+        /* ── Sidebar ── */
+        .vet-sidebar {
+          width: 224px;
+          background: ${T.sidebar};
+          border-right: 1px solid ${T.sidebarBorder};
+          display: flex;
+          flex-direction: column;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow: hidden;
+          flex-shrink: 0;
+          transition: width 0.25s ease, transform 0.3s ease;
+        }
+
+        .vet-sidebar.collapsed { width: 64px; }
+
+        .vet-sidebar-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 18px 14px;
+          border-bottom: 1px solid ${T.sidebarBorder};
+          flex-shrink: 0;
+        }
+
+        .vet-logo-mark {
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, ${T.accent}, ${T.green});
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 17px;
+          flex-shrink: 0;
+          box-shadow: 0 2px 8px rgba(232,160,32,0.35);
+        }
+
+        .vet-brand {
+          font-family: 'Playfair Display', serif;
+          font-size: 15px;
+          color: ${T.text};
+          letter-spacing: 0.02em;
+          flex: 1;
+        }
+
+        .vet-brand span {
+          display: block;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: ${T.textMuted};
+          margin-top: 1px;
+        }
+
+        .vet-collapse-btn {
+          background: none;
+          border: none;
+          color: ${T.groupLabel};
+          cursor: pointer;
+          padding: 4px 6px;
+          border-radius: 4px;
+          font-size: 13px;
+          flex-shrink: 0;
+          transition: all 0.15s;
+          display: none;
+        }
+
+        .vet-collapse-btn:hover {
+          background: rgba(255,255,255,0.08);
+          color: ${T.text};
+        }
+
+        .vet-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+        .vet-nav-group { padding: 8px 10px 4px; }
+
+        .vet-nav-group-label {
+          display: block;
+          font-size: 9.5px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: ${T.groupLabel};
+          padding: 0 4px;
+          margin-bottom: 4px;
+        }
+
+        .vet-sidebar a:hover {
+          background: rgba(232,160,32,0.08) !important;
+          color: ${T.text} !important;
+        }
+
+        .vet-nav-icon {
+          font-size: 15px;
+          flex-shrink: 0;
+          width: 20px;
+          text-align: center;
+        }
+
+        .vet-nav-label { flex: 1; }
+
+        .vet-nav-badge {
+          font-size: 9px;
+          font-weight: 700;
+          color: ${T.primary};
+          background: ${T.accent};
+          padding: 1px 6px;
+          border-radius: 20px;
+        }
+
+        /* ── User section ── */
+        .vet-sidebar-user {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 14px;
+          border-top: 1px solid ${T.sidebarBorder};
+        }
+
+        .vet-user-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, ${T.green}, ${T.accent});
+          color: white;
+          font-size: 12px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .vet-user-info { flex: 1; overflow: hidden; }
+
+        .vet-user-name {
+          font-size: 13px;
+          font-weight: 600;
+          color: ${T.text};
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .vet-user-role {
+          font-size: 11px;
+          color: ${T.textMuted};
+        }
+
+        .vet-logout-btn {
+          background: none;
+          border: none;
+          color: ${T.textMuted};
+          cursor: pointer;
+          font-size: 15px;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.15s;
+        }
+
+        .vet-logout-btn:hover { color: ${T.text}; background: rgba(255,255,255,0.08); }
+
+        /* ── Right panel ── */
+        .vet-admin-right {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        /* ── Header ── */
+        .vet-admin-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 28px;
+          background: ${T.headerBg};
+          border-bottom: 1px solid ${T.headerBorder};
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          flex-shrink: 0;
+        }
+
+        .vet-breadcrumbs {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          color: #999;
+        }
+
+        .vet-crumb { display: flex; align-items: center; gap: 6px; }
+        .vet-crumb:last-child { color: ${T.primary}; font-weight: 500; }
+
+        .vet-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .vet-icon-btn {
+          position: relative;
+          width: 36px;
+          height: 36px;
+          border-radius: 9px;
+          border: none;
+          background: ${T.iconBtnBg};
+          color: ${T.primaryMid};
+          font-size: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.18s;
+        }
+
+        .vet-icon-btn:hover { background: #eddfc7; transform: translateY(-1px); }
+
+        .vet-notif-dot {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          width: 8px;
+          height: 8px;
+          background: #e53935;
+          border-radius: 50%;
+          border: 2px solid ${T.headerBg};
+        }
+
+        /* ── Notification panel ── */
+        .vet-notif-panel {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          width: 310px;
+          background: white;
+          border: 1px solid ${T.headerBorder};
+          border-radius: 14px;
+          box-shadow: 0 8px 32px rgba(61,43,0,0.12);
+          overflow: hidden;
+          z-index: 300;
+          animation: vetFadeDown 0.15s ease;
+        }
+
+        @keyframes vetFadeDown {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .vet-notif-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 16px;
+          border-bottom: 1px solid ${T.headerBorder};
+        }
+
+        .vet-notif-title {
+          font-weight: 600;
+          font-size: 14px;
+          color: ${T.primary};
+        }
+
+        .vet-notif-mark-btn {
+          background: none;
+          border: none;
+          color: ${T.accent};
+          font-size: 12px;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .vet-notif-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 12px 16px;
+          border-bottom: 1px solid #f5ede0;
+          transition: background 0.15s;
+        }
+
+        .vet-notif-item:hover { background: #fdf8f2; }
+        .vet-notif-item:last-child { border-bottom: none; }
+
+        .vet-notif-unread-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: ${T.accent};
+          flex-shrink: 0;
+          margin-top: 5px;
+        }
+
+        .vet-notif-text {
+          font-size: 13px;
+          color: #333;
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .vet-notif-time {
+          font-size: 11px;
+          color: #999;
+          margin: 2px 0 0;
+        }
+
+        /* ── Page title bar ── */
+        .vet-page-title-bar {
+          padding: 18px 28px 16px;
+          background: white;
+          border-bottom: 1px solid ${T.headerBorder};
+          flex-shrink: 0;
+        }
+
+        .vet-page-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 22px;
+          color: ${T.primary};
+          font-weight: 700;
+        }
+
+        /* ── Content ── */
+        .vet-admin-content {
+          flex: 1;
+          padding: 28px;
+          overflow-y: auto;
+          background: ${T.content};
+        }
+
+        /* ── Mobile toggle ── */
+        .vet-sidebar-toggle {
+          display: none;
+          position: fixed;
+          top: 16px;
+          left: 16px;
+          z-index: 1100;
+          width: 40px;
+          height: 40px;
+          background: ${T.sidebar};
+          color: ${T.text};
+          border: none;
+          border-radius: 8px;
+          font-size: 18px;
+          cursor: pointer;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+
+        .vet-sidebar-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 998;
+          backdrop-filter: blur(2px);
+        }
+
+        @media (min-width: 769px) {
+          .vet-collapse-btn { display: flex; }
+        }
+
+        @media (max-width: 768px) {
+          .vet-sidebar-toggle  { display: flex; }
+          .vet-sidebar-overlay { display: block; }
+
+          .vet-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 224px !important;
+            transform: translateX(-100%);
+            z-index: 999;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.35);
+          }
+
+          .vet-sidebar.open    { transform: translateX(0); }
+          .vet-admin-header    { padding: 12px 16px 12px 64px; }
+          .vet-page-title-bar  { padding: 14px 16px; }
+          .vet-admin-content   { padding: 16px; }
+        }
+
+        button:focus-visible, a:focus-visible {
+          outline: 2px solid ${T.accent};
+          outline-offset: 2px;
+          border-radius: 4px;
+        }
+      `}</style>
+
+      {/* ── Mobile toggle ── */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
       <button
         className="vet-sidebar-toggle"
         onClick={() => setSidebarOpen((o) => !o)}
         aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+<<<<<<< HEAD
+=======
+        aria-expanded={sidebarOpen}
+        aria-controls="vet-admin-sidebar"
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
       >
         {sidebarOpen ? "✕" : "☰"}
       </button>
 
+<<<<<<< HEAD
+=======
+      {/* ── Overlay ── */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
       {sidebarOpen && (
         <div
           className="vet-sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
+<<<<<<< HEAD
+=======
+          aria-hidden="true"
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
         />
       )}
 
       <div className="vet-admin-wrapper">
+<<<<<<< HEAD
         <aside
           id="vet-admin-sidebar"
           className={`vet-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}
         >
           <div className="vet-sidebar-header">
             <div className="vet-logo-mark">🐾</div>
+=======
+
+        {/* ════ SIDEBAR ════ */}
+        <aside
+          id="vet-admin-sidebar"
+          className={`vet-sidebar ${sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}
+          aria-label="Admin navigation"
+        >
+          {/* Header */}
+          <div className="vet-sidebar-header">
+            <div className="vet-logo-mark" aria-hidden="true">🐾</div>
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
             {!sidebarCollapsed && (
               <div className="vet-brand">
                 VetAdopt
@@ -262,11 +755,20 @@ const AdminSidebar = () => {
             <button
               className="vet-collapse-btn"
               onClick={() => setSidebarCollapsed((c) => !c)}
+<<<<<<< HEAD
+=======
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand" : "Collapse"}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
             >
               {sidebarCollapsed ? "»" : "«"}
             </button>
           </div>
 
+<<<<<<< HEAD
+=======
+          {/* Nav */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
           <nav className="vet-nav">
             {NAV_GROUPS.map((group) => (
               <div key={group.label} className="vet-nav-group">
@@ -281,7 +783,11 @@ const AdminSidebar = () => {
                     onClick={() => setSidebarOpen(false)}
                     title={sidebarCollapsed ? label : undefined}
                   >
+<<<<<<< HEAD
                     <span className="vet-nav-icon">{icon}</span>
+=======
+                    <span className="vet-nav-icon" aria-hidden="true">{icon}</span>
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
                     {!sidebarCollapsed && <span className="vet-nav-label">{label}</span>}
                     {!sidebarCollapsed && badge && (
                       <span className="vet-nav-badge">{badge}</span>
@@ -292,10 +798,15 @@ const AdminSidebar = () => {
             ))}
           </nav>
 
+<<<<<<< HEAD
+=======
+          {/* User */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
           <div
             className="vet-sidebar-user"
             style={{ justifyContent: sidebarCollapsed ? "center" : "flex-start" }}
           >
+<<<<<<< HEAD
             <div className="vet-user-avatar">
               {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : "A"}
             </div>
@@ -323,11 +834,37 @@ const AdminSidebar = () => {
                       {c.label}
                     </Link>
                   )}
+=======
+            <div className="vet-user-avatar" aria-hidden="true">JD</div>
+            {!sidebarCollapsed && (
+              <div className="vet-user-info">
+                <div className="vet-user-name">Jane Doe</div>
+                <div className="vet-user-role">Super Admin</div>
+              </div>
+            )}
+            {!sidebarCollapsed && (
+              <button className="vet-logout-btn" title="Log out" aria-label="Log out">↪</button>
+            )}
+          </div>
+        </aside>
+
+        {/* ════ RIGHT PANEL ════ */}
+        <div className="vet-admin-right">
+
+          {/* Header */}
+          <header className="vet-admin-header">
+            <nav className="vet-breadcrumbs" aria-label="Breadcrumb">
+              {crumbs.map((c, i) => (
+                <span key={c.path} className="vet-crumb">
+                  {i > 0 && <span aria-hidden="true">/</span>}
+                  {c.label}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
                 </span>
               ))}
             </nav>
 
             <div className="vet-header-actions">
+<<<<<<< HEAD
               <div style={{ position: "relative" }} ref={notifRef}>
                 <button
                   className="vet-icon-btn"
@@ -339,6 +876,22 @@ const AdminSidebar = () => {
 
                 {notifOpen && (
                   <div className="vet-notif-panel">
+=======
+              {/* Notifications */}
+              <div style={{ position: "relative" }}>
+                <button
+                  className="vet-icon-btn"
+                  onClick={() => setNotifOpen((o) => !o)}
+                  aria-label={`Notifications, ${unreadCount} unread`}
+                  aria-expanded={notifOpen}
+                >
+                  🔔
+                  {unreadCount > 0 && <span className="vet-notif-dot" aria-hidden="true" />}
+                </button>
+
+                {notifOpen && (
+                  <div className="vet-notif-panel" role="dialog" aria-label="Notifications">
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
                     <div className="vet-notif-header">
                       <span className="vet-notif-title">Notifications</span>
                       {unreadCount > 0 && (
@@ -366,10 +919,18 @@ const AdminSidebar = () => {
             </div>
           </header>
 
+<<<<<<< HEAD
+=======
+          {/* Page title */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
           <div className="vet-page-title-bar">
             <h1 className="vet-page-title">{pageTitle}</h1>
           </div>
 
+<<<<<<< HEAD
+=======
+          {/* Content */}
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
           <main className="vet-admin-content" id="main-content">
             <Suspense fallback={<SkeletonLoader />}>
               <Outlet />

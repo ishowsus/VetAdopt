@@ -1,9 +1,16 @@
+<<<<<<< HEAD
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+=======
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";  // ← add this
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
 const firebaseConfig = {
   apiKey: "AIzaSyDFoPMcXhwDaCIc6UIZAgTt6FF_zKpS0bE",
   authDomain: "vetadopt-3f512.firebaseapp.com",
@@ -14,6 +21,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+<<<<<<< HEAD
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
@@ -32,3 +40,8 @@ export const updateUserPresence = async (uid, isOnline) => {
     console.error("Error updating presence:", error);
   }
 };
+=======
+export const auth = getAuth(app); // Added this
+export const db = getFirestore(app); // Added this
+export const storage = getStorage(app);  // ← add this
+>>>>>>> 22a7c16f039a290b92aa2e972aaa8a338ae8ffe7
