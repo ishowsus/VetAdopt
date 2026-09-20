@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
@@ -51,6 +51,14 @@ const ProtectedRoute = ({ user, children, roles }) => {
 
 function App() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Dashboard shells (admin / vet / shelter) own their navigation.
+  // Hide the global floating "Menu" Sidebar there to avoid double nav + double offset.
+  const isDashboardRoute =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/vet") ||
+    location.pathname.startsWith("/shelter");
 
   // Initialize user state from localStorage
   const [user, setUser] = useState(() => {
@@ -105,6 +113,11 @@ function App() {
           flex-direction: column;
         }
 
+        .content-area.no-sidebar {
+          margin-left: 0;
+          width: 100%;
+        }
+
         /* Prevent content from breaking page boundaries when sidebar changes */
         .content-area > * {
           max-width: 100%;
@@ -120,9 +133,9 @@ function App() {
       `}</style>
 
       <div className="main-wrapper">
-        <Sidebar user={user} />
+        {!isDashboardRoute && <Sidebar user={user} />}
 
-        <main className="content-area">
+        <main className={isDashboardRoute ? "content-area no-sidebar" : "content-area"}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
@@ -150,7 +163,8 @@ function App() {
             >
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="users" element={<Users />} />
-              <Route path="animal" element={<AdminAnimals />} />
+              <Route path="animals" element={<AdminAnimals />} />
+              <Route path="animal" element={<Navigate to="/admin/animals" replace />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
               <Route
@@ -222,7 +236,7 @@ function App() {
             />
           </Routes>
 
-          <Footer />
+          {!isDashboardRoute && <Footer />}
         </main>
       </div>
 

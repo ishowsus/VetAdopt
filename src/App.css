@@ -35,6 +35,12 @@
   flex-direction: column;
 }
 
+/* Dashboard shells (admin/vet/shelter) have their own nav — no global Menu offset */
+.content-area.no-sidebar {
+  margin-left: 0;
+  width: 100%;
+}
+
 /* Prevent internal page elements from overflowing during collapse */
 .content-area > * {
   max-width: 100%;

@@ -61,9 +61,10 @@ export default function DropdownSidebar({ user }) {
   const getProfilePath = () => {
     if (!user) return "/login";
     switch (user.role?.toLowerCase()) {
-      case "shelter": return "/Shelter/ShelterDashboard";
-      case "vet":     return "/Veterinarian/VetDashboard";
-      case "admin":   return "/admin/Dashboard";
+      case "shelter": return "/shelter/dashboard";
+      case "vet":
+      case "veterinarian": return "/vet/dashboard";
+      case "admin":   return "/admin/dashboard";
       default:        return "/profile";
     }
   };

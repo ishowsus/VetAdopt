@@ -474,9 +474,10 @@ const AdminLayout = () => {
           .mobile-sidebar-toggle {
             display: flex;
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 50;
+            /* Lift above the global chatbot FAB (bottom:24px right:24px) so the admin ☰ stays tappable */
+            bottom: 88px;
+            right: 16px;
+            z-index: 1100;
             width: 48px;
             height: 48px;
             border-radius: 50%;
