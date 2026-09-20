@@ -22,12 +22,14 @@
   width: 100%;
 }
 
-/* Dynamically adjusts based on the --sidebar-width variable set in Sidebar.jsx */
+/* The global top Navbar (components/Navbar.jsx) is position:fixed —
+   public pages offset via .with-navbar padding-top on .main-wrapper.
+   Dashboards (.no-sidebar) offset inside their own layouts. */
 .content-area {
   flex: 1;
   min-height: 100vh;
-  margin-left: var(--sidebar-width, 260px);
-  width: calc(100% - var(--sidebar-width, 260px));
+  margin-left: 0;
+  width: 100%;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;

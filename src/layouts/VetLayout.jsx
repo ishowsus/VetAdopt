@@ -20,6 +20,10 @@ function VetLayout() {
     setSigningOut(true);
     try {
       await signOut(auth);
+      // Keep App.jsx state in sync — Firebase signOut alone leaves
+      // localStorage.user set, so the session would survive a page refresh.
+      localStorage.removeItem("user");
+      window.dispatchEvent(new Event("authChange"));
       navigate("/login");
     } catch (error) {
       console.error(error);
@@ -124,7 +128,7 @@ const styles = {
   mobileBrand: {
     fontWeight: 700,
     fontSize: "18px",
-    color: "#2e7d32",
+    color: "#fff",
   },
 
   mobileToggle: {
@@ -132,7 +136,7 @@ const styles = {
     background: "transparent",
     fontSize: "22px",
     cursor: "pointer",
-    color: "#2e7d32",
+    color: "#fff",
   },
 
   sidebar: {

@@ -150,13 +150,14 @@ const handleLogin = async (e) => {
     <div className="login-page">
       <style>{`
         .login-page {
-          min-height: 100vh;
+          min-height: calc(100vh - 170px); /* leave room for the footer below (≈60px margin + ≈110px footer) so the page fits the viewport without a stray scroll */
           display: flex;
           align-items: center;
           justify-content: center;
           background: linear-gradient(135deg,#e8f5e9,#c8e6c9);
           padding:20px;
           font-family: Arial, sans-serif;
+          border-radius: 0 0 20px 20px;
         }
 
         .login-card{
@@ -168,7 +169,9 @@ const handleLogin = async (e) => {
           box-shadow:0 10px 30px rgba(0,0,0,.1);
         }
 
-        h2{
+        /* Scoped to .login-page - bare input/h2 selectors here leaked into
+           every other input/h2 rendered on /login (e.g. the chatbot) */
+        .login-page h2{
           text-align:center;
           color:#2e7d32;
           margin-bottom:5px;
@@ -203,31 +206,53 @@ const handleLogin = async (e) => {
           color:#2e7d32;
         }
 
-        input{
+        .login-page input{
           width:100%;
-          padding:14px;
+          padding:14px 46px 14px 14px; /* extra right padding so text doesn't run under the eye icon */
           border-radius:10px;
           border:2px solid #ddd;
           box-sizing:border-box;
           font-size:16px;
         }
 
-        input:focus{
+        .login-page input:focus{
           outline:none;
           border-color:#2e7d32;
         }
 
+        /* Dedicated wrapper around the password input only — the toggle is
+           centered against THIS box, not the label+input group, so it always
+           sits inside the textbox regardless of label height or global CSS */
+        .password-wrapper{
+          position:relative;
+        }
+
+        .password-wrapper input{
+          display:block;
+        }
+
         .password-toggle{
           position:absolute;
-          right:10px;
-          top:36px;
+          top:50%;
+          right:28px; /* raise this number to move the icon further LEFT */
+          transform:translateY(-50%);
+          width:32px;
+          height:32px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
           cursor:pointer;
-          font-size:12px;
-          font-weight:bold;
           background:none;
           border:none;
+          border-radius:8px;
           color:#2e7d32;
-          padding:8px;
+          padding:0;
+          z-index:1;
+          line-height:0;
+        }
+
+        .password-toggle:hover{
+          background:rgba(46,125,50,0.08);
         }
 
         .forgot-password{
@@ -308,23 +333,44 @@ const handleLogin = async (e) => {
 
           <div className="input-group">
             <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="password-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
 
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? "HIDE" : "SHOW"}
-            </button>
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+              {showPassword ? (
+                /* Eye-off (password visible → click to hide) */
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              ) : (
+                /* Eye (password hidden → click to show) */
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+              </button>
+            </div>
           </div>
 
           <div className="forgot-password">

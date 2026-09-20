@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Sidebar from "./components/Sidebar";
+import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import EnhancedChatbot from "./components/EnhancedChatbot";
 
@@ -54,11 +54,15 @@ function App() {
   const location = useLocation();
 
   // Dashboard shells (admin / vet / shelter) own their navigation.
-  // Hide the global floating "Menu" Sidebar there to avoid double nav + double offset.
+  // Hide the global top Navbar there to avoid double nav + double offset.
+  // Auth pages (login / register) are also navbar-free for a focused, full-width layout.
   const isDashboardRoute =
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/vet") ||
     location.pathname.startsWith("/shelter");
+  const isAuthRoute =
+    location.pathname === "/login" || location.pathname === "/register";
+  const hideGlobalSidebar = isDashboardRoute || isAuthRoute;
 
   // Initialize user state from localStorage
   const [user, setUser] = useState(() => {
@@ -102,12 +106,15 @@ function App() {
           width: 100%;
         }
 
+        /* Room for the fixed top Navbar on public pages */
+        .main-wrapper.with-navbar {
+          padding-top: var(--navbar-height, 64px);
+        }
+
         .content-area {
           flex: 1;
           min-height: 80vh;
-          margin-left: var(--sidebar-width, 260px);
-          transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          width: calc(100% - var(--sidebar-width, 260px));
+          width: 100%;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
@@ -125,17 +132,16 @@ function App() {
 
         /* ── Mobile Layout Adjustments ── */
         @media (max-width: 768px) {
-          .content-area {
-            margin-left: 0 !important;
-            width: 100% !important;
+          .main-wrapper.with-navbar {
+            padding-top: var(--navbar-height, 64px);
           }
         }
       `}</style>
 
-      <div className="main-wrapper">
-        {!isDashboardRoute && <Sidebar user={user} />}
+      <div className={hideGlobalSidebar ? "main-wrapper" : "main-wrapper with-navbar"}>
+        {!hideGlobalSidebar && <Navbar user={user} />}
 
-        <main className={isDashboardRoute ? "content-area no-sidebar" : "content-area"}>
+        <main className={hideGlobalSidebar ? "content-area no-sidebar" : "content-area"}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />

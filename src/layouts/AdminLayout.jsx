@@ -1,5 +1,8 @@
-import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
+import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, Suspense } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "../Firebase";
+import LogoutModal from "../components/LogoutModal";
 
 // ─── External Trigger Helper ─────────────────────────────────
 // Allows child components or external modules to push notifications
@@ -74,6 +77,29 @@ const AdminLayout = () => {
   );
   const [notifOpen,        setNotifOpen]        = useState(false);
   const [notifications,    setNotifications]    = useState(INITIAL_NOTIFICATIONS);
+
+  const navigate = useNavigate();
+
+  // Logged-in admin info (Login.jsx stores { uid, email, role, status } in localStorage)
+  const adminUser = (() => {
+    try { return JSON.parse(localStorage.getItem("user")) || null; } catch { return null; }
+  })();
+
+  const handleLogout = async () => {
+    setLogoutOpen(false);
+    try {
+      // Fully end the Firebase session too (same as Vet/Shelter layouts)
+      await signOut(auth);
+    } catch (error) {
+      console.error(error);
+    }
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("authChange"));
+    navigate("/login");
+  };
+
+  // Logout confirmation lightbox
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   const notifRef  = useRef(null);
   const location  = useLocation();
@@ -178,7 +204,8 @@ const AdminLayout = () => {
           <button
             className="sidebar-collapse-toggle"
             onClick={() => setSidebarCollapsed((c) => !c)}
-            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            title={sidebarCollapsed ? undefined : "Collapse Sidebar"}
+            data-tip={sidebarCollapsed ? "Expand Sidebar" : undefined}
           >
             {sidebarCollapsed ? "❯" : "❮"}
           </button>
@@ -193,7 +220,7 @@ const AdminLayout = () => {
                   key={to}
                   to={to}
                   className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
-                  title={sidebarCollapsed ? label : undefined}
+                  data-tip={sidebarCollapsed ? label : undefined}
                 >
                   <span className="nav-icon">{icon}</span>
                   {!sidebarCollapsed && <span className="nav-text">{label}</span>}
@@ -206,18 +233,23 @@ const AdminLayout = () => {
 
         {/* User Profile Footer */}
         <div className="sidebar-footer">
-          <div className="user-avatar">JD</div>
+          <div className="user-avatar">
+            {adminUser?.email?.charAt(0).toUpperCase() || "A"}
+          </div>
           {!sidebarCollapsed && (
             <div className="user-details">
-              <span className="user-name">Jane Doe</span>
-              <span className="user-role">Super Admin</span>
+              <span className="user-name">{adminUser?.email || "Admin"}</span>
+              <span className="user-role">{adminUser?.role || "admin"}</span>
             </div>
           )}
-          {!sidebarCollapsed && (
-            <button className="logout-btn" title="Log out">
-              ↪
-            </button>
-          )}
+          <button
+            className="logout-btn"
+            title={sidebarCollapsed ? undefined : "Log out"}
+            data-tip={sidebarCollapsed ? "Log out" : undefined}
+            onClick={() => setLogoutOpen(true)}
+          >
+            ↪
+          </button>
         </div>
       </aside>
 
@@ -303,6 +335,13 @@ const AdminLayout = () => {
         </main>
       </div>
 
+      {/* Logout confirmation lightbox */}
+      <LogoutModal
+        open={logoutOpen}
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
+
       <style>{`
         /* Base Shell Styles */
         .admin-shell {
@@ -349,6 +388,63 @@ const AdminLayout = () => {
         }
         .sidebar-collapse-toggle:hover { color: #ffffff; background: rgba(255, 255, 255, 0.1); }
 
+        /* Collapsed (72px) rail: tighten the brand row so the paw and the
+           expand toggle sit together at the LEFT instead of overflowing
+           the narrow rail and clipping the toggle at the right edge */
+        .admin-sidebar.is-collapsed .sidebar-brand-container {
+          padding: 0 8px;
+          gap: 6px;
+          justify-content: flex-start;
+        }
+        /* Collapsed rail: center the nav icons (the 12px label gap and
+           left padding would otherwise leave them lopsided) */
+        .admin-sidebar.is-collapsed .sidebar-nav { padding: 16px 6px; }
+        .admin-sidebar.is-collapsed .nav-link {
+          position: relative; /* anchor the ::after tooltip to the icon, not the sidebar */
+          justify-content: center;
+          gap: 0;
+          padding: 10px 6px;
+        }
+        /* Collapsed rail: stack avatar over the logout button so the
+           36px avatar can't be crushed by the row overflow */
+        .admin-sidebar.is-collapsed .sidebar-footer {
+          flex-direction: column;
+          align-items: center;
+          padding: 12px 6px;
+          gap: 8px;
+        }
+        /* Collapsed rail: styled tooltips instead of the native title
+           tooltip (which floated detached over the page content).
+           Nav needs overflow: visible so the tooltip can escape the rail. */
+        .admin-sidebar.is-collapsed .sidebar-nav { overflow: visible; }
+        .admin-sidebar.is-collapsed .sidebar-collapse-toggle,
+        .admin-sidebar.is-collapsed .logout-btn { position: relative; }
+        .admin-sidebar.is-collapsed [data-tip]::after {
+          content: attr(data-tip);
+          position: absolute;
+          left: calc(100% + 10px);
+          top: 50%;
+          transform: translateY(-50%);
+          background: #0f172a;
+          color: #ffffff;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1;
+          padding: 6px 10px;
+          border-radius: 6px;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.15s ease;
+          pointer-events: none;
+          z-index: 60;
+        }
+        .admin-sidebar.is-collapsed [data-tip]:hover::after {
+          opacity: 1;
+          visibility: visible;
+        }
+
         .sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 8px; display: flex; flex-direction: column; gap: 16px; }
         .nav-group-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; padding: 0 12px; font-weight: 600; }
         .nav-link {
@@ -374,7 +470,7 @@ const AdminLayout = () => {
           gap: 12px;
           border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: white; font-weight: 600; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: white; font-weight: 600; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
         .user-details { flex: 1; display: flex; flex-direction: column; }
         .user-name { font-size: 14px; font-weight: 600; color: #ffffff; }
         .user-role { font-size: 12px; color: #94a3b8; }

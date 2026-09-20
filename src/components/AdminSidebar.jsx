@@ -140,6 +140,18 @@ const AdminSidebar = () => {
     return () => { document.body.style.overflow = ""; };
   }, [sidebarOpen]);
 
+  // Leaving the desktop breakpoint? Drop the collapsed state so the mobile
+  // drawer (forced back to 224px) shows its labels again.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handleChange = (e) => {
+      if (e.matches) setSidebarCollapsed(false);
+    };
+    if (mq.matches) setSidebarCollapsed(false);
+    mq.addEventListener("change", handleChange);
+    return () => mq.removeEventListener("change", handleChange);
+  }, []);
+
   const markAllRead = () =>
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
 
@@ -151,23 +163,12 @@ const AdminSidebar = () => {
   };
 
   const linkStyle = ({ isActive }) => ({
-    display:        "flex",
-    alignItems:     "center",
-    gap:            sidebarCollapsed ? "0" : "10px",
-    justifyContent: sidebarCollapsed ? "center" : "flex-start",
-    padding:        "9px 12px",
-    borderRadius:   "8px",
     textDecoration: "none",
     color:          isActive ? T.accent : T.textMuted,
     background:     isActive ? T.accentBg : "transparent",
     fontWeight:     isActive ? "600" : "400",
-    fontSize:       "13.5px",
-    fontFamily:     "'DM Sans', sans-serif",
     borderLeft:     isActive ? `3px solid ${T.accent}` : "3px solid transparent",
     transition:     "all 0.18s ease",
-    whiteSpace:     "nowrap",
-    overflow:       "hidden",
-    position:       "relative",
   });
 
   return (
@@ -177,12 +178,23 @@ const AdminSidebar = () => {
         .vet-admin-wrapper { display: flex; min-height: 100vh; font-family: 'DM Sans', sans-serif; background: ${T.content}; }
         .vet-sidebar { width: 224px; background: ${T.sidebar}; border-right: 1px solid ${T.sidebarBorder}; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow: hidden; flex-shrink: 0; transition: width 0.25s ease, transform 0.3s ease; }
         .vet-sidebar.collapsed { width: 64px; }
-        .vet-sidebar-header { display: flex; align-items: center; gap: 10px; padding: 18px 14px; border-bottom: 1px solid ${T.sidebarBorder}; flex-shrink: 0; }
+        /* Header: default = vertical stack (collapsed-safe, nothing can clip);
+           the roomy expanded row is the exception */
+        .vet-sidebar-header { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 4px; border-bottom: 1px solid ${T.sidebarBorder}; flex-shrink: 0; }
+        .vet-sidebar:not(.collapsed) .vet-sidebar-header { flex-direction: row; justify-content: flex-start; gap: 10px; padding: 18px 14px; }
         .vet-logo-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, ${T.accent}, ${T.green}); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(232,160,32,0.35); }
+        .vet-sidebar.collapsed .vet-logo-mark { cursor: pointer; position: relative; right: 9px; }
+        .vet-sidebar.collapsed .vet-logo-mark:hover { filter: brightness(1.12); }
+        .vet-sidebar.collapsed .vet-logo-mark:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
         .vet-brand { font-family: 'Playfair Display', serif; font-size: 15px; color: ${T.text}; letter-spacing: 0.02em; flex: 1; }
         .vet-brand span { display: block; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: ${T.textMuted}; margin-top: 1px; }
         .vet-collapse-btn { background: none; border: none; color: ${T.groupLabel}; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 13px; flex-shrink: 0; transition: all 0.15s; display: none; }
         .vet-collapse-btn:hover { background: rgba(255,255,255,0.08); color: ${T.text}; }
+        /* Nav link layout lives in CSS (not inline) so the collapsed state
+           can re-center it without specificity fights */
+        .vet-nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13.5px; white-space: nowrap; overflow: hidden; position: relative; }
+        .vet-sidebar.collapsed .vet-nav a { justify-content: center; gap: 0; padding: 9px 6px; }
+        .vet-sidebar.collapsed .vet-sidebar-user { justify-content: center; }
         .vet-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
         .vet-nav-group { padding: 8px 10px 4px; }
         .vet-nav-group-label { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: ${T.groupLabel}; padding: 0 4px; margin-bottom: 4px; }
@@ -225,7 +237,12 @@ const AdminSidebar = () => {
         .vet-admin-content { flex: 1; padding: 28px; overflow-y: auto; background: ${T.content}; }
         .vet-sidebar-toggle { display: none; position: fixed; top: 16px; left: 16px; z-index: 1100; width: 40px; height: 40px; background: ${T.sidebar}; color: ${T.text}; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
         .vet-sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; backdrop-filter: blur(2px); }
-        @media (min-width: 769px) { .vet-collapse-btn { display: flex; } }
+        @media (min-width: 769px) {
+          .vet-collapse-btn { display: flex; }
+          /* In the 64px rail the logo itself is the expand toggle,
+             so the dedicated button steps aside */
+          .vet-sidebar.collapsed .vet-collapse-btn { display: none; }
+        }
         @media (max-width: 768px) {
           .vet-sidebar-toggle { display: flex; }
           .vet-sidebar-overlay { display: block; }
@@ -271,21 +288,41 @@ const AdminSidebar = () => {
         >
           {/* Header */}
           <div className="vet-sidebar-header">
-            <div className="vet-logo-mark" aria-hidden="true">🐾</div>
-            {!sidebarCollapsed && (
-              <div className="vet-brand">
-                VetAdopt
-                <span>Admin Panel</span>
+            {sidebarCollapsed ? (
+              /* In the 64px rail the logo itself is the expand toggle */
+              <div
+                className="vet-logo-mark"
+                role="button"
+                tabIndex={0}
+                aria-label="Expand sidebar"
+                title="Expand sidebar"
+                onClick={() => setSidebarCollapsed(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSidebarCollapsed(false);
+                  }
+                }}
+              >
+                🐾
               </div>
+            ) : (
+              <>
+                <div className="vet-logo-mark" aria-hidden="true">🐾</div>
+                <div className="vet-brand">
+                  VetAdopt
+                  <span>Admin Panel</span>
+                </div>
+                <button
+                  className="vet-collapse-btn"
+                  onClick={() => setSidebarCollapsed(true)}
+                  aria-label="Collapse sidebar"
+                  title="Collapse sidebar"
+                >
+                  «
+                </button>
+              </>
             )}
-            <button
-              className="vet-collapse-btn"
-              onClick={() => setSidebarCollapsed((c) => !c)}
-              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={sidebarCollapsed ? "Expand" : "Collapse"}
-            >
-              {sidebarCollapsed ? "»" : "«"}
-            </button>
           </div>
 
           {/* Nav */}
@@ -318,10 +355,7 @@ const AdminSidebar = () => {
           </nav>
 
           {/* User */}
-          <div
-            className="vet-sidebar-user"
-            style={{ justifyContent: sidebarCollapsed ? "center" : "flex-start" }}
-          >
+          <div className="vet-sidebar-user">
             <div className="vet-user-avatar" aria-hidden="true">
               {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : "A"}
             </div>
