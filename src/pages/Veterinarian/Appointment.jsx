@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from "firebase/firestore";
-import { auth, db } from "../../Firebase";
+import { auth, db } from "../../firebase";
 
 const FILTERS = ["all", "pending", "confirmed", "completed", "cancelled"];
 
