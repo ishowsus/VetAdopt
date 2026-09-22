@@ -9,7 +9,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../../Firebase";
+import { auth, db } from "../../firebase";
 
 function AdoptionRequests() {
   const [requests, setRequests] = useState([]);
