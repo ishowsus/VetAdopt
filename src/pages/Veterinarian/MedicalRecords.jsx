@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../Firebase";
+import { db } from "../../firebase";
 
 function MedicalRecords() {
   const [records, setRecords] = useState([]);
