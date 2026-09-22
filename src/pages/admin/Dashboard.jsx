@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, getCountFromServer } from "firebase/firestore";
-import { db } from "../../Firebase";
+import { db } from "../../firebase";
 
 const CARDS = [
   { key: "users", label: "Registered Users", icon: "👥", color: "#2e7d32", light: "#e8f5e9", path: "/admin/users" },
