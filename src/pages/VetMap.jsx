@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { db, auth } from "../Firebase";
+import { db, auth } from "../firebase";
 import {
   collection, query, where, getDocs, addDoc, onSnapshot,
   updateDoc, doc, serverTimestamp,
