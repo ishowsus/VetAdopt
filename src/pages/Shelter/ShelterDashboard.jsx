@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../../Firebase";
+import { auth, db } from "../../firebase";
 
 // Firestore serverTimestamp() fields come back as Timestamp objects (with a
 // .toDate() method), not strings - new Date(timestamp) on one of those gives
