@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db, auth } from "../../Firebase";
+import { db, auth } from "../../firebase";
 import { supabase } from "../../supabase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Loader2, Upload } from "lucide-react";
