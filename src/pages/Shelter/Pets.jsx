@@ -11,7 +11,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../../Firebase";
+import { auth, db } from "../../firebase";
 import { supabase } from "../../supabase";
 
 const STATUS_OPTIONS = ["Available", "Pending", "Adopted"];
