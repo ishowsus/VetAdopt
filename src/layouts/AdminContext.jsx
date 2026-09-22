@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 // Import from root src directory
-import { db, auth, updateUserPresence } from "../firebase"; 
+import { db, auth, updateUserPresence } from "../Firebase"; 
 
 const AdminContext = createContext(null);
 
