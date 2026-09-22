@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth } from "../Firebase";
+import { auth } from "../firebase";
 
 const NAV_ITEMS = [
   { to: "/vet/dashboard", label: "Dashboard", icon: "🏠" },
