@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { auth, db } from "../../Firebase";
+import { auth, db } from "../../firebase";
 
 function Dashboard() {
   const [stats, setStats] = useState({
