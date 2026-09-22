@@ -28,11 +28,11 @@ import Settings from "./pages/admin/Settings";
 
 // Vet Pages & Layout
 import VetLayout from "./layouts/VetLayout";
-import VetDashboard from "./pages/veterinarian/VetDashboard";
-import Patients from "./pages/veterinarian/Patients";
-import Appointment from "./pages/veterinarian/Appointment";
-import MedicalRecords from "./pages/veterinarian/MedicalRecords";
-import VetProfile from "./pages/veterinarian/VetProfile";
+import VetDashboard from "./pages/Veterinarian/VetDashboard";
+import Patients from "./pages/Veterinarian/Patients";
+import Appointment from "./pages/Veterinarian/Appointment";
+import MedicalRecords from "./pages/Veterinarian/MedicalRecords";
+import VetProfile from "./pages/Veterinarian/VetProfile";
 
 // Shelter Pages & Layout
 import ShelterLayout from "./layouts/ShelterLayout";
