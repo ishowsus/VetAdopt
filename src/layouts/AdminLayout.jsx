@@ -1,7 +1,7 @@
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "../Firebase";
+import { auth } from "../firebase";
 import LogoutModal from "../components/LogoutModal";
 
 // ─── External Trigger Helper ─────────────────────────────────
