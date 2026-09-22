@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 // Firebase imports
-import { auth, db } from "../Firebase";
+import { auth, db } from "../firebase";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
