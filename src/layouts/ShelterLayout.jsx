@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth } from "../Firebase";
+import { auth } from "../firebase";
 import LogoutModal from "../components/LogoutModal";
 
 const NAV_ITEMS = [
