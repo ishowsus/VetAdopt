@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../../Firebase";
+import { auth, db } from "../../firebase";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (val) => {
