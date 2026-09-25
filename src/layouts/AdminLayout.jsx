@@ -1,7 +1,8 @@
 import { Outlet, NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import LogoutModal from "../components/LogoutModal";
 
 // ─── External Trigger Helper ─────────────────────────────────
@@ -27,7 +28,8 @@ const NAV_GROUPS = [
   {
     label: "Management",
     links: [
-      { to: "/admin/users",   label: "Users",   icon: "👥", badge: 3 },
+      { to: "/admin/users",   label: "Users",   icon: "👥" },
+      { to: "/admin/adoption-listings", label: "Adoption Listings", icon: "🏠" },
       { to: "/admin/reports", label: "Reports", icon: "📑" },
       { to: "/admin/animals", label: "Animals", icon: "🐾" },
     ],
@@ -43,6 +45,7 @@ const NAV_GROUPS = [
 const ROUTE_TITLES = {
   "/admin/dashboard": "Dashboard",
   "/admin/users":     "User Management",
+  "/admin/adoption-listings": "Adoption Listings",
   "/admin/reports":   "Analytics & Reports",
   "/admin/animals":   "Animal Listings",
   "/admin/settings":  "System Settings",
@@ -54,6 +57,35 @@ const INITIAL_NOTIFICATIONS = [
   { id: 3, text: "Report #9 generated",            time: "2h ago",  unread: false },
   { id: 4, text: "New user registered",            time: "1d ago",  unread: false },
 ];
+
+// ─── Live badge counts ─────────────────────────────────────────
+// Users needing sign-off (vet/shelter accounts stuck at "pending" — see
+// Register.jsx/Login.jsx) and adopter pet listings waiting on /admin/adoption-listings
+// (see RehomePet.jsx/AdoptionListings.jsx). Kept here so the sidebar badge is
+// never stale, without every page having to know about the other's queue.
+function useNavBadges() {
+  const [pendingUsers, setPendingUsers] = useState(0);
+  const [pendingListings, setPendingListings] = useState(0);
+
+  useEffect(() => {
+    const usersQuery = query(collection(db, "users"), where("status", "==", "pending"));
+    const unsubUsers = onSnapshot(usersQuery, (snap) => setPendingUsers(snap.size), () => {});
+
+    const listingsQuery = query(
+      collection(db, "pets"),
+      where("listedBy", "==", "adopter"),
+      where("status", "==", "Pending Review")
+    );
+    const unsubListings = onSnapshot(listingsQuery, (snap) => setPendingListings(snap.size), () => {});
+
+    return () => {
+      unsubUsers();
+      unsubListings();
+    };
+  }, []);
+
+  return { pendingUsers, pendingListings };
+}
 
 // ─── Skeleton Loader Component ────────────────────────────────
 const SkeletonLoader = () => (
@@ -79,6 +111,8 @@ const AdminLayout = () => {
   const [notifications,    setNotifications]    = useState(INITIAL_NOTIFICATIONS);
 
   const navigate = useNavigate();
+  const { pendingUsers, pendingListings } = useNavBadges();
+  const navBadges = { "/admin/users": pendingUsers, "/admin/adoption-listings": pendingListings };
 
   // Logged-in admin info (Login.jsx stores { uid, email, role, status } in localStorage)
   const adminUser = (() => {
@@ -215,18 +249,21 @@ const AdminLayout = () => {
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="nav-group">
               {!sidebarCollapsed && <span className="nav-group-title">{group.label}</span>}
-              {group.links.map(({ to, label, icon, badge }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
-                  data-tip={sidebarCollapsed ? label : undefined}
-                >
-                  <span className="nav-icon">{icon}</span>
-                  {!sidebarCollapsed && <span className="nav-text">{label}</span>}
-                  {!sidebarCollapsed && badge ? <span className="nav-badge">{badge}</span> : null}
-                </NavLink>
-              ))}
+              {group.links.map(({ to, label, icon }) => {
+                const badge = navBadges[to] || 0;
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                    data-tip={sidebarCollapsed ? label : undefined}
+                  >
+                    <span className="nav-icon">{icon}</span>
+                    {!sidebarCollapsed && <span className="nav-text">{label}</span>}
+                    {!sidebarCollapsed && badge > 0 ? <span className="nav-badge">{badge}</span> : null}
+                  </NavLink>
+                );
+              })}
             </div>
           ))}
         </nav>
