@@ -50,14 +50,17 @@ const normalizeRole = (role) => {
   return ROLE_ALIASES[r] || r;
 };
 
-// Where each role lands when it opens a page meant for another role.
+// Where each role lands when it opens a page meant for another role, and
+// where it lands right after logging in. Adopters go to the Adopt page;
+// admin/vet/shelter go to their own dashboard shells.
 const ROLE_HOME = {
+  adopter: "/adopt",
   admin: "/admin/dashboard",
   veterinarian: "/vet/dashboard",
   shelter: "/shelter/dashboard",
 };
 
-// Dashboard a user lands on after logging in (null = normal adopter, no dashboard).
+// Dashboard a user lands on after logging in.
 const getLanding = (user) => (user ? ROLE_HOME[normalizeRole(user.role)] || null : null);
 
 // ProtectedRoute wrapper
@@ -113,8 +116,9 @@ function App() {
     };
   }, []);
 
-  // After a fresh login, send vets / shelters / admins to their own dashboard,
-  // whatever page the Login screen navigates to. (A page refresh while already
+  // After a fresh login, send the user to their role's landing page —
+  // /adopt for adopters, their dashboard for admin/vet/shelter — whatever
+  // page the Login screen navigates to. (A page refresh while already
   // logged in is not a "fresh login", so it never redirects.)
   const prevUser = useRef(user);
   const pendingLanding = useRef(false);
@@ -130,7 +134,7 @@ function App() {
 
     const landing = getLanding(user);
     if (!landing) {
-      pendingLanding.current = false; // adopters keep the normal flow
+      pendingLanding.current = false; // unknown role: keep the normal flow
       return;
     }
     if (location.pathname.startsWith("/" + landing.split("/")[1])) {

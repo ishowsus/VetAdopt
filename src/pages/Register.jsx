@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "motion/react";
+
 // 1. Import Firebase auth and db
 import { auth, db } from "../firebase";
 import {
@@ -10,9 +12,29 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1200&q=80";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 // "admin" can never be chosen at sign-up. Create admins by hand in Firestore.
 const ALLOWED_ROLES = ["adopter", "veterinarian", "shelter"];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.15 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 26 },
+  },
+};
 
 function Register() {
   const navigate = useNavigate();
@@ -136,188 +158,296 @@ function Register() {
   };
 
   return (
-    <div className="register-page">
+    <div className="auth-split">
       <style>{`
-        .register-page {
+        .auth-split {
           min-height: 100vh;
+          display: flex;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          color: #14201a;
+          background: #fff;
+        }
+
+        .auth-split-form-col {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        @media (min-width: 960px) {
+          .auth-split-form-col { width: 46%; }
+        }
+
+        .auth-split-brand {
+          padding: 28px 32px 0;
+          font-size: 1.15rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: #1b5e20;
+        }
+
+        .auth-split-center {
+          flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 100%);
-          font-family: 'Inter', sans-serif;
-          padding: 20px;
+          padding: 24px 32px 48px;
         }
-        .register-card {
-          background: #ffffff;
+
+        .auth-split-form {
           width: 100%;
-          max-width: 450px;
-          padding: 40px;
-          border-radius: 30px;
-          box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+          max-width: 380px;
         }
-        h2 { color: #1b5e20; margin-bottom: 8px; text-align: center; }
-        .subtitle { color: #666; text-align: center; margin-bottom: 30px; font-size: 0.9rem; }
+
+        .auth-split-form h1 {
+          font-size: 1.9rem;
+          font-weight: 700;
+          margin: 0 0 6px;
+          letter-spacing: -0.01em;
+          color: #0f2015;
+        }
+
+        .auth-split-form .subtitle {
+          color: #5b6b60;
+          margin: 0 0 24px;
+          font-size: 0.95rem;
+        }
+
         .error-banner {
           background: #fdecea;
           color: #b3261e;
           border: 1px solid #f5c6c2;
           border-radius: 10px;
           padding: 10px 14px;
-          font-size: 0.85rem;
+          font-size: 14px;
           margin-bottom: 18px;
-          text-align: center;
         }
-        .input-group { margin-bottom: 18px; }
+
+        .input-group { margin-bottom: 16px; }
+
         .input-group label {
           display: block;
-          font-size: 0.75rem;
-          font-weight: 800;
-          color: #2e7d32;
           margin-bottom: 6px;
+          font-weight: 600;
+          font-size: 0.8rem;
+          color: #1b5e20;
           text-transform: uppercase;
+          letter-spacing: 0.03em;
         }
-        input {
+
+        .auth-split input,
+        .auth-split select {
           width: 100%;
           padding: 12px 16px;
-          border-radius: 12px;
-          border: 2px solid #eee;
-          font-size: 1rem;
+          border-radius: 14px;
+          border: 1.5px solid #dfe6e1;
           box-sizing: border-box;
+          font-size: 0.95rem;
           outline: none;
-          transition: 0.3s;
+          transition: border-color 0.15s;
+          background: #fff;
         }
-        input:focus { border-color: #2e7d32; background: #fafafa; }
+
+        .auth-split input:focus,
+        .auth-split select:focus {
+          border-color: #2e7d32;
+        }
+
+        .role-hint {
+          font-size: 0.75rem;
+          color: #78909c;
+          margin-top: 6px;
+        }
+
         .strength-container { margin-top: 8px; }
         .strength-bar-bg { height: 4px; background: #eee; border-radius: 2px; overflow: hidden; }
         .strength-bar-fill { height: 100%; transition: all 0.4s ease; }
-        .strength-text { font-size: 0.7rem; font-weight: bold; margin-top: 4px; text-align: right; color: ${strength.color}; }
-        .mismatch-text { font-size: 0.7rem; font-weight: bold; margin-top: 4px; color: #f44336; }
+        .strength-text { font-size: 0.7rem; font-weight: 700; margin-top: 4px; text-align: right; }
+        .mismatch-text { font-size: 0.7rem; font-weight: 700; margin-top: 4px; color: #f44336; }
+
         .reg-btn {
           width: 100%;
           padding: 15px;
-          background: #2e7d32;
+          background: #1b5e20;
           color: white;
           border: none;
-          border-radius: 15px;
-          font-weight: 700;
-          font-size: 1rem;
+          border-radius: 999px;
+          font-weight: 600;
+          font-size: 0.95rem;
           cursor: pointer;
-          margin-top: 20px;
-          transition: 0.3s;
+          margin-top: 6px;
+          transition: opacity 0.15s;
         }
-        .reg-btn:disabled { background: #ccc; cursor: not-allowed; }
-        .reg-btn:hover:not(:disabled) { background: #1b5e20; transform: translateY(-2px); }
-        .hint { font-size: 0.72rem; color: #78909c; margin-top: 6px; }
-        .footer-link { text-align: center; margin-top: 20px; font-size: 0.9rem; color: #666; }
-        .footer-link a { color: #2e7d32; font-weight: 700; text-decoration: none; }
+        .reg-btn:disabled { background: #a8c8a9; cursor: not-allowed; }
+        .reg-btn:hover:not(:disabled) { opacity: 0.9; }
+
+        .footer-link {
+          margin-top: 22px;
+          font-size: 0.9rem;
+          color: #5b6b60;
+        }
+        .footer-link a { color: #1b5e20; font-weight: 600; text-decoration: none; }
         .footer-link a:hover { text-decoration: underline; }
-        select {
-          width: 100%;
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 2px solid #eee;
-          font-size: 1rem;
-          box-sizing: border-box;
-          outline: none;
-          transition: 0.3s;
-          background: white;
+
+        .auth-split-image-col {
+          display: none;
+          position: relative;
+          overflow: hidden;
         }
-        select:focus {
-          border-color: #2e7d32;
+        @media (min-width: 960px) {
+          .auth-split-image-col {
+            display: block;
+            width: 54%;
+            padding: 16px 16px 16px 0;
+          }
+        }
+        .auth-split-image-frame {
+          position: relative;
+          height: 100%;
+          width: 100%;
+          border-radius: 28px;
+          overflow: hidden;
+        }
+        .auth-split-image-frame img {
+          height: 100%;
+          width: 100%;
+          object-fit: cover;
+        }
+        .auth-split-image-caption {
+          position: absolute;
+          left: 24px;
+          right: 24px;
+          bottom: 24px;
+          color: #fff;
+          background: rgba(15, 32, 21, 0.45);
+          backdrop-filter: blur(6px);
+          padding: 16px 20px;
+          border-radius: 16px;
+          font-size: 0.95rem;
+          line-height: 1.4;
         }
       `}</style>
 
-      <div className="register-card">
-        <h2>Create Account</h2>
-        <p className="subtitle">Join the community helping pets in Cebu</p>
+      <div className="auth-split-form-col">
+        <div className="auth-split-brand">🐾 VetAdopt</div>
 
-        {errorMsg && <div className="error-banner">{errorMsg}</div>}
+        <div className="auth-split-center">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="auth-split-form"
+          >
+            <motion.div variants={itemVariants}>
+              <h1>Create your account</h1>
+              <p className="subtitle">Join the community helping pets in Cebu.</p>
+            </motion.div>
 
-        <form onSubmit={handleRegister} noValidate>
-          <div className="input-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              id="name"
-              type="text"
-              autoComplete="name"
-              placeholder="Juan Dela Cruz"
-              value={formData.name}
-              onChange={updateField("name")}
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="name@example.com"
-              value={formData.email}
-              onChange={updateField("email")}
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="role">Register As</label>
-            <select id="role" value={formData.role} onChange={updateField("role")}>
-              <option value="adopter">🐾 Adopter</option>
-              <option value="veterinarian">🩺 Veterinarian</option>
-              <option value="shelter">🏠 Shelter Owner</option>
-            </select>
-            {formData.role !== "adopter" && (
-              <div className="hint">
-                Veterinarian and shelter accounts need administrator approval before you can sign in.
-              </div>
+            {errorMsg && (
+              <motion.div variants={itemVariants} className="error-banner">
+                {errorMsg}
+              </motion.div>
             )}
+
+            <form onSubmit={handleRegister} noValidate>
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="name">Full Name</label>
+                <input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Juan Dela Cruz"
+                  value={formData.name}
+                  onChange={updateField("name")}
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="email">Email Address</label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  value={formData.email}
+                  onChange={updateField("email")}
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="role">Register As</label>
+                <select id="role" value={formData.role} onChange={updateField("role")}>
+                  <option value="adopter">🐾 Adopter</option>
+                  <option value="veterinarian">🩺 Veterinarian</option>
+                  <option value="shelter">🏠 Shelter Owner</option>
+                </select>
+                {formData.role !== "adopter" && (
+                  <div className="role-hint">
+                    Veterinarian and shelter accounts need administrator approval before you can sign in.
+                  </div>
+                )}
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={updateField("password")}
+                />
+                <div className="role-hint">At least 8 characters, with a letter and a number.</div>
+                <div className="strength-container">
+                  <div className="strength-bar-bg">
+                    <div
+                      className="strength-bar-fill"
+                      style={{ width: strength.width, background: strength.color }}
+                    ></div>
+                  </div>
+                  <div className="strength-text" style={{ color: strength.color }}>
+                    {strength.label}
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={updateField("confirmPassword")}
+                />
+                {formData.confirmPassword &&
+                  formData.password !== formData.confirmPassword && (
+                    <div className="mismatch-text">Passwords don't match</div>
+                  )}
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <button className="reg-btn" type="submit" disabled={loading}>
+                  {loading ? "Creating Account..." : "Join VetAdopt"}
+                </button>
+              </motion.div>
+            </form>
+
+            <motion.p variants={itemVariants} className="footer-link">
+              Already have an account? <Link to="/login">Login</Link>
+            </motion.p>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="auth-split-image-col">
+        <div className="auth-split-image-frame">
+          <img src={HERO_IMAGE} alt="A cat resting, waiting to be adopted" />
+          <div className="auth-split-image-caption">
+            Create an account to start browsing pets or list one for adoption.
           </div>
-
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={updateField("password")}
-            />
-            <div className="hint">At least 8 characters, with a letter and a number.</div>
-            <div className="strength-container">
-              <div className="strength-bar-bg">
-                <div
-                  className="strength-bar-fill"
-                  style={{ width: strength.width, background: strength.color }}
-                ></div>
-              </div>
-              <div className="strength-text">{strength.label}</div>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={updateField("confirmPassword")}
-            />
-            {formData.confirmPassword &&
-              formData.password !== formData.confirmPassword && (
-                <div className="mismatch-text">Passwords don't match</div>
-              )}
-          </div>
-
-          <button className="reg-btn" type="submit" disabled={loading}>
-            {loading ? "Creating Account..." : "Join VetAdopt"}
-          </button>
-        </form>
-
-        <p className="footer-link">
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
+        </div>
       </div>
     </div>
   );

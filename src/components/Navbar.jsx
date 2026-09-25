@@ -20,10 +20,16 @@ const NAV_PUBLIC = [
   { to: "/about", label: "About",      icon: "ℹ️" },
 ];
 
-const NAV_AUTH = [
-  { to: "/adopt", label: "Adopt",      icon: "🐾" },
+const NAV_AUTH_SIMPLE = [
   { to: "/vets",  label: "Vet Map",    icon: "📍" },
   { to: "/quiz",  label: "Matchmaker", icon: "✨" },
+];
+
+const ADOPT_CATEGORIES = [
+  { to: "/adopt?type=Dog",    label: "Dogs",    icon: "🐶", blurb: "Loyal companions of every size" },
+  { to: "/adopt?type=Cat",    label: "Cats",    icon: "🐱", blurb: "Independent, affectionate housemates" },
+  { to: "/adopt?type=Rabbit", label: "Rabbits", icon: "🐰", blurb: "Quiet, gentle indoor pets" },
+  { to: "/adopt?type=Bird",   label: "Birds",   icon: "🦜", blurb: "Bright, social feathered friends" },
 ];
 
 export const NAVBAR_HEIGHT = 64;
@@ -31,7 +37,10 @@ export const NAVBAR_HEIGHT = 64;
 export default function Navbar({ user }) {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adoptOpen, setAdoptOpen] = useState(false);
+  const [mobileAdoptOpen, setMobileAdoptOpen] = useState(false);
   const containerRef = useRef(null);
+  const adoptCloseTimer = useRef(null);
 
   // Close mobile panel on outside click
   useEffect(() => {
@@ -47,11 +56,20 @@ export default function Navbar({ user }) {
   // Close mobile panel on Escape key
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === "Escape") setMobileOpen(false);
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        setAdoptOpen(false);
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // Lock body scroll while the mobile panel is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
 
   const handleLogout = () => {
     setMobileOpen(false);
@@ -87,7 +105,20 @@ export default function Navbar({ user }) {
     transition: "all 0.2s ease",
   });
 
-  const closeMobile = () => setMobileOpen(false);
+  const closeMobile = () => {
+    setMobileOpen(false);
+    setMobileAdoptOpen(false);
+  };
+
+  // Small hover-intent delay so the mega-menu doesn't flicker closed
+  // when the cursor crosses the gap between the trigger and the panel.
+  const openAdopt = () => {
+    clearTimeout(adoptCloseTimer.current);
+    setAdoptOpen(true);
+  };
+  const scheduleCloseAdopt = () => {
+    adoptCloseTimer.current = setTimeout(() => setAdoptOpen(false), 150);
+  };
 
   return (
     <>
@@ -133,12 +164,136 @@ export default function Navbar({ user }) {
           display: flex;
           align-items: center;
           gap: 4px;
+          position: relative;
         }
         .vet-nav-links a:hover,
         .vet-nav-mobile a:hover {
           color: ${TOKENS.accent} !important;
           background: rgba(232, 160, 32, 0.1) !important;
         }
+
+        /* ---------- Adopt mega-menu trigger ---------- */
+        .vet-nav-adopt-wrap { position: relative; }
+
+        .vet-nav-adopt-trigger {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 10px;
+          background: transparent;
+          border: none;
+          color: ${TOKENS.text};
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .vet-nav-adopt-trigger:hover,
+        .vet-nav-adopt-trigger.open {
+          color: ${TOKENS.accent};
+          background: rgba(232, 160, 32, 0.1);
+        }
+        .vet-nav-adopt-chevron {
+          transition: transform 0.2s ease;
+          font-size: 0.7rem;
+        }
+        .vet-nav-adopt-trigger.open .vet-nav-adopt-chevron { transform: rotate(180deg); }
+
+        .vet-mega {
+          position: absolute;
+          top: calc(100% + 10px);
+          left: 50%;
+          transform: translateX(-50%);
+          width: 560px;
+          background: #fffaf2;
+          border-radius: 16px;
+          box-shadow: 0 20px 45px rgba(30, 20, 5, 0.28);
+          border: 1px solid rgba(122, 105, 66, 0.15);
+          padding: 20px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateX(-50%) translateY(-6px);
+          transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
+          z-index: 1001;
+        }
+        .vet-mega.open {
+          opacity: 1;
+          visibility: visible;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        .vet-mega-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 12px;
+          border-radius: 12px;
+          text-decoration: none;
+          transition: background 0.15s ease;
+        }
+        .vet-mega-item:hover { background: rgba(122, 105, 66, 0.08); }
+
+        .vet-mega-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          background: ${TOKENS.accentLight};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.15rem;
+          flex-shrink: 0;
+        }
+
+        .vet-mega-item-label {
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 600;
+          font-size: 0.9rem;
+          color: #2a2314;
+          margin: 0 0 2px;
+        }
+
+        .vet-mega-item-blurb {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.78rem;
+          color: #7a6e58;
+          margin: 0;
+          line-height: 1.35;
+        }
+
+        .vet-mega-featured {
+          grid-column: span 2;
+          margin-top: 4px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(122, 105, 66, 0.15);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .vet-mega-featured-text {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.82rem;
+          color: #5c5240;
+        }
+        .vet-mega-featured-text strong { color: #2a2314; }
+        .vet-mega-featured-cta {
+          background: ${TOKENS.green};
+          color: #fff;
+          padding: 8px 14px;
+          border-radius: 10px;
+          text-decoration: none;
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 600;
+          font-size: 0.82rem;
+          white-space: nowrap;
+          transition: opacity 0.2s;
+        }
+        .vet-mega-featured-cta:hover { opacity: 0.9; }
 
         .vet-nav-actions {
           display: flex;
@@ -257,30 +412,101 @@ export default function Navbar({ user }) {
         }
         .vet-nav-toggle:hover { background: rgba(255, 255, 255, 0.18); }
 
+        /* ---------- Mobile: slide-in panel from the right ---------- */
+        .vet-nav-mobile-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(20, 14, 4, 0.45);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.22s ease, visibility 0.22s;
+          z-index: 999;
+        }
+        .vet-nav-mobile-backdrop.open { opacity: 1; visibility: visible; }
+
         .vet-nav-mobile {
-          display: none;
-          position: absolute;
-          top: 100%;
-          left: 0;
+          position: fixed;
+          top: 0;
           right: 0;
+          bottom: 0;
+          width: 85%;
+          max-width: 340px;
           background: linear-gradient(180deg, ${TOKENS.primaryMid} 0%, ${TOKENS.primary} 100%);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-          padding: 12px 16px 16px;
+          box-shadow: -12px 0 32px rgba(0, 0, 0, 0.35);
+          padding: 20px 18px 24px;
+          display: flex;
           flex-direction: column;
           gap: 4px;
-          animation: navSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          transform: translateX(100%);
+          transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+          z-index: 1000;
+          overflow-y: auto;
+        }
+        .vet-nav-mobile.open { transform: translateX(0); }
+
+        .vet-nav-mobile-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        @keyframes navSlideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0); }
+        .vet-nav-mobile-close {
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          color: ${TOKENS.text};
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          font-size: 1.05rem;
+          cursor: pointer;
         }
+
+        .vet-nav-mobile-section-label {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.72rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: ${TOKENS.textMuted};
+          padding: 10px 14px 4px;
+        }
+
+        .vet-nav-mobile-adopt-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          background: transparent;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 10px;
+          color: ${TOKENS.text};
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.95rem;
+          cursor: pointer;
+        }
+        .vet-nav-mobile-adopt-toggle:hover { background: rgba(232, 160, 32, 0.1); color: ${TOKENS.accent}; }
+        .vet-nav-mobile-adopt-toggle span.chev {
+          transition: transform 0.2s ease;
+          font-size: 0.7rem;
+        }
+        .vet-nav-mobile-adopt-toggle.open span.chev { transform: rotate(180deg); }
+
+        .vet-nav-mobile-adopt-panel {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.22s ease;
+          padding-left: 10px;
+        }
+        .vet-nav-mobile-adopt-panel.open { max-height: 260px; }
 
         .vet-nav-mobile .vet-nav-donate {
           display: block;
           text-align: center;
-          margin-top: 8px;
+          margin-top: 14px;
         }
 
         .vet-nav-mobile-user {
@@ -302,8 +528,6 @@ export default function Navbar({ user }) {
             display: inline-flex;
             margin-left: auto;
           }
-
-          .vet-nav-mobile.open { display: flex; }
         }
 
       `}</style>
@@ -316,15 +540,54 @@ export default function Navbar({ user }) {
 
           {/* Desktop horizontal links */}
           <nav className="vet-nav-links">
-            {NAV_PUBLIC.map(({ to, label, icon }) => (
-              <NavLink key={to} to={to} style={navLinkStyle} end={to === "/"}>
-                <span>{icon}</span>
-                <span>{label}</span>
-              </NavLink>
-            ))}
+            <NavLink to="/" style={navLinkStyle} end>
+              <span>🏠</span><span>Home</span>
+            </NavLink>
+
+            {user && (
+              <div
+                className="vet-nav-adopt-wrap"
+                onMouseEnter={openAdopt}
+                onMouseLeave={scheduleCloseAdopt}
+              >
+                <button
+                  className={`vet-nav-adopt-trigger${adoptOpen ? " open" : ""}`}
+                  onClick={() => setAdoptOpen((o) => !o)}
+                  aria-expanded={adoptOpen}
+                >
+                  <span>🐾</span><span>Adopt</span>
+                  <span className="vet-nav-adopt-chevron">▾</span>
+                </button>
+
+                <div className={`vet-mega${adoptOpen ? " open" : ""}`}>
+                  {ADOPT_CATEGORIES.map(({ to, label, icon, blurb }) => (
+                    <NavLink key={to} to={to} className="vet-mega-item" onClick={() => setAdoptOpen(false)}>
+                      <span className="vet-mega-icon">{icon}</span>
+                      <div>
+                        <p className="vet-mega-item-label">{label}</p>
+                        <p className="vet-mega-item-blurb">{blurb}</p>
+                      </div>
+                    </NavLink>
+                  ))}
+
+                  <div className="vet-mega-featured">
+                    <p className="vet-mega-featured-text">
+                      Not sure where to start? <strong>Take the Matchmaker quiz.</strong>
+                    </p>
+                    <NavLink to="/quiz" className="vet-mega-featured-cta" onClick={() => setAdoptOpen(false)}>
+                      Try it ✨
+                    </NavLink>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <NavLink to="/about" style={navLinkStyle}>
+              <span>ℹ️</span><span>About</span>
+            </NavLink>
 
             {user &&
-              NAV_AUTH.map(({ to, label, icon }) => (
+              NAV_AUTH_SIMPLE.map(({ to, label, icon }) => (
                 <NavLink key={to} to={to} style={navLinkStyle}>
                   <span>{icon}</span>
                   <span>{label}</span>
@@ -370,77 +633,94 @@ export default function Navbar({ user }) {
             aria-label="Toggle navigation"
             aria-expanded={mobileOpen}
           >
-            {mobileOpen ? "✕" : "☰"}
+            ☰
           </button>
         </div>
+      </header>
 
-        {/* Mobile dropdown panel */}
-        <nav className={`vet-nav-mobile${mobileOpen ? " open" : ""}`}>
-          {NAV_PUBLIC.map(({ to, label, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              style={navLinkStyle}
-              end={to === "/"}
-              onClick={closeMobile}
+      {/* Mobile backdrop + slide-in panel (outside <header> so it can sit above everything) */}
+      <div className={`vet-nav-mobile-backdrop${mobileOpen ? " open" : ""}`} onClick={closeMobile} />
+
+      <nav className={`vet-nav-mobile${mobileOpen ? " open" : ""}`} aria-hidden={!mobileOpen}>
+        <div className="vet-nav-mobile-header">
+          <span style={{ color: TOKENS.text, fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
+            🐾 VetAdopt
+          </span>
+          <button className="vet-nav-mobile-close" onClick={closeMobile} aria-label="Close menu">✕</button>
+        </div>
+
+        <NavLink to="/" style={navLinkStyle} end onClick={closeMobile}>
+          <span>🏠</span><span>Home</span>
+        </NavLink>
+        <NavLink to="/about" style={navLinkStyle} onClick={closeMobile}>
+          <span>ℹ️</span><span>About</span>
+        </NavLink>
+
+        {user && (
+          <>
+            <button
+              className={`vet-nav-mobile-adopt-toggle${mobileAdoptOpen ? " open" : ""}`}
+              onClick={() => setMobileAdoptOpen((o) => !o)}
+              aria-expanded={mobileAdoptOpen}
             >
-              <span>{icon}</span>
-              <span>{label}</span>
-            </NavLink>
-          ))}
+              <span>🐾 Adopt</span>
+              <span className="chev">▾</span>
+            </button>
+            <div className={`vet-nav-mobile-adopt-panel${mobileAdoptOpen ? " open" : ""}`}>
+              {ADOPT_CATEGORIES.map(({ to, label, icon }) => (
+                <NavLink key={to} to={to} style={navLinkStyle} onClick={closeMobile}>
+                  <span>{icon}</span><span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
 
-          {user &&
-            NAV_AUTH.map(({ to, label, icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                style={navLinkStyle}
-                onClick={closeMobile}
-              >
+            {NAV_AUTH_SIMPLE.map(({ to, label, icon }) => (
+              <NavLink key={to} to={to} style={navLinkStyle} onClick={closeMobile}>
                 <span>{icon}</span>
                 <span>{label}</span>
               </NavLink>
             ))}
+          </>
+        )}
 
-          {!user && (
-            <>
-              <NavLink to="/login" style={navLinkStyle} onClick={closeMobile}>
-                <span>🔑</span>
-                <span>Login</span>
-              </NavLink>
-              <NavLink to="/register" style={navLinkStyle} onClick={closeMobile}>
-                <span>📝</span>
-                <span>Register</span>
-              </NavLink>
-            </>
-          )}
+        {!user && (
+          <>
+            <div className="vet-nav-mobile-section-label">Account</div>
+            <NavLink to="/login" style={navLinkStyle} onClick={closeMobile}>
+              <span>🔑</span>
+              <span>Login</span>
+            </NavLink>
+            <NavLink to="/register" style={navLinkStyle} onClick={closeMobile}>
+              <span>📝</span>
+              <span>Register</span>
+            </NavLink>
+          </>
+        )}
 
-          <NavLink to="/donate" className="vet-nav-donate" onClick={closeMobile}>
-            ❤ Donate
-          </NavLink>
+        <NavLink to="/donate" className="vet-nav-donate" onClick={closeMobile}>
+          ❤ Donate
+        </NavLink>
 
-          {user && (
-            <div className="vet-nav-mobile-user">
-              <NavLink
-                to={getProfilePath()}
-                className="vet-nav-user-chip"
-                onClick={closeMobile}
-              >
-                <span className="vet-nav-avatar">
-                  {user.name?.charAt(0).toUpperCase() || "U"}
-                </span>
-                <span className="vet-nav-user-name">
-                  {user.name || "User Account"}
-                </span>
-              </NavLink>
-              <button className="vet-nav-logout" onClick={handleLogout}>
-                Log Out
-              </button>
-            </div>
-          )}
-        </nav>
-
-      </header>
+        {user && (
+          <div className="vet-nav-mobile-user">
+            <NavLink
+              to={getProfilePath()}
+              className="vet-nav-user-chip"
+              onClick={closeMobile}
+            >
+              <span className="vet-nav-avatar">
+                {user.name?.charAt(0).toUpperCase() || "U"}
+              </span>
+              <span className="vet-nav-user-name">
+                {user.name || "User Account"}
+              </span>
+            </NavLink>
+            <button className="vet-nav-logout" onClick={handleLogout}>
+              Log Out
+            </button>
+          </div>
+        )}
+      </nav>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { motion } from "motion/react";
 
 // Firebase imports
 import { auth, db } from "../firebase";
@@ -10,6 +11,26 @@ import {
   signOut,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1200&q=80";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.15 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 26 },
+  },
+};
 
 function Login() {
   const navigate = useNavigate();
@@ -136,7 +157,7 @@ function Login() {
           break;
 
         default:
-          navigate("/profile");
+          navigate("/adopt");
       }
     } catch (error) {
       console.error(error);
@@ -170,268 +191,318 @@ function Login() {
   };
 
   return (
-    <div className="login-page">
+    <div className="auth-split">
       <style>{`
-        .login-page {
-          min-height: calc(100vh - 170px); /* leave room for the footer below (≈60px margin + ≈110px footer) so the page fits the viewport without a stray scroll */
+        .auth-split {
+          min-height: 100vh;
+          display: flex;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          color: #14201a;
+          background: #fff;
+        }
+
+        .auth-split-form-col {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        @media (min-width: 960px) {
+          .auth-split-form-col { width: 46%; }
+        }
+
+        .auth-split-brand {
+          padding: 28px 32px 0;
+          font-size: 1.15rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: #1b5e20;
+        }
+
+        .auth-split-center {
+          flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg,#e8f5e9,#c8e6c9);
-          padding:20px;
-          font-family: Arial, sans-serif;
-          border-radius: 0 0 20px 20px;
+          padding: 24px 32px 48px;
         }
 
-        .login-card{
-          background:white;
-          width:100%;
-          max-width:420px;
-          padding:40px;
-          border-radius:20px;
-          box-shadow:0 10px 30px rgba(0,0,0,.1);
+        .auth-split-form {
+          width: 100%;
+          max-width: 380px;
         }
 
-        /* Scoped to .login-page - bare input/h2 selectors here leaked into
-           every other input/h2 rendered on /login (e.g. the chatbot) */
-        .login-page h2{
-          text-align:center;
-          color:#2e7d32;
-          margin-bottom:5px;
+        .auth-split-form h1 {
+          font-size: 1.9rem;
+          font-weight: 700;
+          margin: 0 0 6px;
+          letter-spacing: -0.01em;
+          color: #0f2015;
         }
 
-        .subtitle{
-          text-align:center;
-          color:#666;
-          margin-bottom:25px;
+        .auth-split-form .subtitle {
+          color: #5b6b60;
+          margin: 0 0 28px;
+          font-size: 0.95rem;
         }
 
-        .error-banner{
-          background:#fdecea;
-          color:#b3261e;
-          border:1px solid #f5c6c2;
-          border-radius:8px;
-          padding:10px 14px;
-          font-size:14px;
-          margin-bottom:18px;
-          text-align:center;
+        .error-banner {
+          background: #fdecea;
+          color: #b3261e;
+          border: 1px solid #f5c6c2;
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-size: 14px;
+          margin-bottom: 18px;
         }
 
-        .info-banner{
-          background:#e8f5e9;
-          color:#1b5e20;
-          border:1px solid #c8e6c9;
-          border-radius:8px;
-          padding:10px 14px;
-          font-size:14px;
-          margin-bottom:18px;
-          text-align:center;
-          line-height:1.4;
+        .info-banner {
+          background: #e8f5e9;
+          color: #1b5e20;
+          border: 1px solid #c8e6c9;
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-size: 14px;
+          margin-bottom: 18px;
+          line-height: 1.4;
         }
 
-        .input-group{
-          margin-bottom:20px;
-          position:relative;
+        .input-group { margin-bottom: 18px; }
+
+        .input-group label {
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: #1b5e20;
         }
 
-        .input-group label{
-          display:block;
-          margin-bottom:8px;
-          font-weight:bold;
-          color:#2e7d32;
+        .auth-split input {
+          width: 100%;
+          padding: 13px 46px 13px 15px;
+          border-radius: 999px;
+          border: 1.5px solid #dfe6e1;
+          box-sizing: border-box;
+          font-size: 0.95rem;
+          outline: none;
+          transition: border-color 0.15s;
         }
 
-        .login-page input{
-          width:100%;
-          padding:14px 46px 14px 14px; /* extra right padding so text doesn't run under the eye icon */
-          border-radius:10px;
-          border:2px solid #ddd;
-          box-sizing:border-box;
-          font-size:16px;
+        .auth-split input:focus {
+          border-color: #2e7d32;
         }
 
-        .login-page input:focus{
-          outline:none;
-          border-color:#2e7d32;
+        .password-wrapper { position: relative; }
+
+        .password-toggle {
+          position: absolute;
+          top: 50%;
+          right: 8px;
+          transform: translateY(-50%);
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          background: none;
+          border: none;
+          border-radius: 999px;
+          color: #2e7d32;
+          padding: 0;
         }
 
-        /* Dedicated wrapper around the password input only — the toggle is
-           centered against THIS box, not the label+input group, so it always
-           sits inside the textbox regardless of label height or global CSS */
-        .password-wrapper{
-          position:relative;
+        .password-toggle:hover { background: rgba(46,125,50,0.08); }
+
+        .forgot-password {
+          text-align: right;
+          margin-top: -8px;
+          margin-bottom: 20px;
         }
 
-        .password-wrapper input{
-          display:block;
+        .forgot-password button {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #2e7d32;
+          cursor: pointer;
+          font-size: 0.85rem;
+          font-weight: 600;
         }
 
-        .password-toggle{
-          position:absolute;
-          top:50%;
-          right:28px; /* raise this number to move the icon further LEFT */
-          transform:translateY(-50%);
-          width:32px;
-          height:32px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          cursor:pointer;
-          background:none;
-          border:none;
-          border-radius:8px;
-          color:#2e7d32;
-          padding:0;
-          z-index:1;
-          line-height:0;
+        .forgot-password button:hover { text-decoration: underline; }
+
+        .login-btn {
+          width: 100%;
+          padding: 15px;
+          background: #1b5e20;
+          color: white;
+          border: none;
+          border-radius: 999px;
+          cursor: pointer;
+          font-size: 0.95rem;
+          font-weight: 600;
+          transition: opacity 0.15s;
         }
 
-        .password-toggle:hover{
-          background:rgba(46,125,50,0.08);
+        .login-btn:hover:not(:disabled) { opacity: 0.9; }
+        .login-btn:disabled { background: #a8c8a9; cursor: not-allowed; }
+
+        .footer-text {
+          margin-top: 24px;
+          font-size: 0.9rem;
+          color: #5b6b60;
         }
 
-        .forgot-password{
-          text-align:right;
-          margin-top:-8px;
-          margin-bottom:20px;
-        }
+        .footer-text a { color: #1b5e20; font-weight: 600; text-decoration: none; }
+        .footer-text a:hover { text-decoration: underline; }
 
-        .forgot-password button{
-          background:none;
-          border:none;
-          padding:0;
-          color:#2e7d32;
-          cursor:pointer;
-          font-size:14px;
-          font-weight:bold;
+        .auth-split-image-col {
+          display: none;
+          position: relative;
+          overflow: hidden;
         }
-
-        .forgot-password button:hover{
-          text-decoration:underline;
+        @media (min-width: 960px) {
+          .auth-split-image-col {
+            display: block;
+            width: 54%;
+            padding: 16px 16px 16px 0;
+          }
         }
-
-        .login-btn{
-          width:100%;
-          padding:15px;
-          background:#2e7d32;
-          color:white;
-          border:none;
-          border-radius:12px;
-          cursor:pointer;
-          font-size:16px;
-          font-weight:bold;
+        .auth-split-image-frame {
+          position: relative;
+          height: 100%;
+          width: 100%;
+          border-radius: 28px;
+          overflow: hidden;
         }
-
-        .login-btn:hover:not(:disabled){
-          background:#1b5e20;
+        .auth-split-image-frame img {
+          height: 100%;
+          width: 100%;
+          object-fit: cover;
         }
-
-        .login-btn:disabled{
-          background:#9ccc9f;
-          cursor:not-allowed;
-        }
-
-        .footer-text{
-          margin-top:20px;
-          text-align:center;
-        }
-
-        .footer-text a{
-          color:#2e7d32;
-          font-weight:bold;
-          text-decoration:none;
-        }
-
-        .footer-text a:hover{
-          text-decoration:underline;
+        .auth-split-image-caption {
+          position: absolute;
+          left: 24px;
+          right: 24px;
+          bottom: 24px;
+          color: #fff;
+          background: rgba(15, 32, 21, 0.45);
+          backdrop-filter: blur(6px);
+          padding: 16px 20px;
+          border-radius: 16px;
+          font-size: 0.95rem;
+          line-height: 1.4;
         }
       `}</style>
 
-      <div className="login-card">
-        <h2>🐾 Welcome Back</h2>
-        <p className="subtitle">Ready to find your new best friend?</p>
+      <div className="auth-split-form-col">
+        <div className="auth-split-brand">🐾 VetAdopt</div>
 
-        {justRegistered && !errorMsg && (
-          <div className="info-banner">
-            {justRegistered.emailSent === false
-              ? "Account created, but we couldn't send the verification email. Sign in below and we'll send a new link."
-              : `Account created! We sent a verification link to ${justRegistered.email}. Click it, then sign in.`}
-            {justRegistered.role !== "adopter" &&
-              " Your account also needs administrator approval before you can sign in."}
+        <div className="auth-split-center">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="auth-split-form"
+          >
+            <motion.div variants={itemVariants}>
+              <h1>Welcome back</h1>
+              <p className="subtitle">Ready to find your new best friend?</p>
+            </motion.div>
+
+            {justRegistered && !errorMsg && (
+              <motion.div variants={itemVariants} className="info-banner">
+                {justRegistered.emailSent === false
+                  ? "Account created, but we couldn't send the verification email. Sign in below and we'll send a new link."
+                  : `Account created! We sent a verification link to ${justRegistered.email}. Click it, then sign in.`}
+                {justRegistered.role !== "adopter" &&
+                  " Your account also needs administrator approval before you can sign in."}
+              </motion.div>
+            )}
+
+            {errorMsg && (
+              <motion.div variants={itemVariants} className="error-banner">
+                {errorMsg}
+              </motion.div>
+            )}
+
+            <form onSubmit={handleLogin} noValidate>
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="email">Email Address</label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="password">Password</label>
+                <div className="password-wrapper">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="forgot-password">
+                <button type="button" onClick={handleForgotPassword}>
+                  Forgot Password?
+                </button>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <button className="login-btn" type="submit" disabled={loading}>
+                  {loading ? "Signing In..." : "Sign In"}
+                </button>
+              </motion.div>
+            </form>
+
+            <motion.p variants={itemVariants} className="footer-text">
+              <Link to="/register">Create Account</Link>
+            </motion.p>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="auth-split-image-col">
+        <div className="auth-split-image-frame">
+          <img src={HERO_IMAGE} alt="A rescued dog waiting to be adopted" />
+          <div className="auth-split-image-caption">
+            Every pet here is rescued, vaccinated, and waiting for a home.
           </div>
-        )}
-
-        {errorMsg && <div className="error-banner">{errorMsg}</div>}
-
-        <form onSubmit={handleLogin} noValidate>
-          <div className="input-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <div className="password-wrapper">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                title={showPassword ? "Hide password" : "Show password"}
-              >
-              {showPassword ? (
-                /* Eye-off (password visible → click to hide) */
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
-              ) : (
-                /* Eye (password hidden → click to show) */
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              )}
-              </button>
-            </div>
-          </div>
-
-          <div className="forgot-password">
-            <button type="button" onClick={handleForgotPassword}>
-              Forgot Password?
-            </button>
-          </div>
-
-          <button className="login-btn" type="submit" disabled={loading}>
-            {loading ? "Signing In..." : "Sign In"}
-          </button>
-        </form>
-
-        <p className="footer-text">
-          <Link to="/register">Create Account</Link>
-        </p>
+        </div>
       </div>
     </div>
   );
