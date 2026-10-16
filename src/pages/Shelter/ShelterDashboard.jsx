@@ -121,18 +121,18 @@ function ShelterDashboard() {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>🏠 Shelter Dashboard</h2>
+      <h2 style={styles.title}>Shelter Dashboard</h2>
       <p style={styles.subtitle}>Here's an overview of your shelter.</p>
 
       {loadError && <div style={styles.errorBanner}>{loadError}</div>}
 
       <div style={styles.statsGrid}>
-        <StatCard icon="🐾" label="Total Pets" value={stats.totalPets} />
-        <StatCard icon="🏡" label="Available Pets" value={stats.availablePets} />
-        <StatCard icon="📄" label="Pending Adoptions" value={stats.pendingAdoptions} />
-        <StatCard icon="❤️" label="Successful Adoptions" value={stats.successfulAdoptions} />
+        <StatCard icon="" label="Total Pets" value={stats.totalPets} />
+        <StatCard icon="" label="Available Pets" value={stats.availablePets} />
+        <StatCard icon="" label="Pending Adoptions" value={stats.pendingAdoptions} />
+        <StatCard icon="" label="Successful Adoptions" value={stats.successfulAdoptions} />
         <StatCard
-          icon="💰"
+          icon=""
           label="Donations Received"
           value={`₱${stats.donationsReceived.toLocaleString()}`}
         />

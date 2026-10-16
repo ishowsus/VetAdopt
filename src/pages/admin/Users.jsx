@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../../firebase";
 
@@ -20,8 +20,18 @@ const ROLE_STYLE = {
   shelter:      { bg: "#f3e5f5", color: "#7b1fa2", label: "Shelter" },
 };
 
+const STATUS_STYLE = {
+  active:    { bg: "#e8f5e9", color: "#2e7d32", label: "Active" },
+  suspended: { bg: "#fff8e1", color: "#f57f17", label: "Suspended" },
+  banned:    { bg: "#ffebee", color: "#c62828", label: "Banned" },
+};
+
 const ROLE_OPTIONS = ["adopter", "veterinarian", "shelter", "admin"];
-const FILTERS = ["all", ...ROLE_OPTIONS];
+const ROLE_FILTERS = ["all", ...ROLE_OPTIONS];
+const STATUS_FILTERS = ["all", "active", "suspended", "banned"];
+
+// Older accounts may have "approved"/"pending" or no status — those are active.
+const getStatus = (u) => (["suspended", "banned"].includes(u.status) ? u.status : "active");
 
 // ─── Inline Toast ─────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
@@ -40,7 +50,7 @@ function Toast({ msg, type, onClose }) {
 }
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
-function ConfirmDialog({ message, onConfirm, onCancel }) {
+function ConfirmDialog({ message, confirmLabel = "Confirm", danger = true, onConfirm, onCancel }) {
   return (
     <div style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
@@ -54,7 +64,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
         <p style={{ fontSize: "0.95rem", color: "#333", marginBottom: "24px", lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
           <button onClick={onCancel} style={{ padding: "10px 20px", borderRadius: "10px", border: "2px solid #eee", background: "white", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "#d32f2f", color: "white", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>Confirm</button>
+          <button onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: danger ? "#d32f2f" : "#2e7d32", color: "white", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{confirmLabel}</button>
         </div>
       </div>
     </div>
@@ -67,15 +77,16 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [toast, setToast]     = useState(null);
-  const [confirm, setConfirm] = useState(null); // { message, onConfirm }
+  const [confirm, setConfirm] = useState(null); // { message, confirmLabel, danger, onConfirm }
   const [currentUid, setCurrentUid] = useState(null);
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
-  const ask = (message, onConfirm) => setConfirm({ message, onConfirm });
+  const ask = (message, onConfirm, opts = {}) => setConfirm({ message, onConfirm, ...opts });
 
   // Track who's actually logged in right now (via Firebase Auth, not
-  // localStorage) so we can stop an admin from editing/deleting themself.
+  // localStorage) so we can stop an admin from suspending/banning themself.
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setCurrentUid(u?.uid ?? null));
     return unsub;
@@ -96,53 +107,40 @@ export default function Users() {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const handleDelete = (id, name) => {
-    if (id === currentUid) {
-      showToast("You can't delete your own account from here.", "error");
-      return;
-    }
-    ask(`Delete user "${name}"? This cannot be undone.`, async () => {
-      setConfirm(null);
-      try {
-        // NOTE: this only removes the Firestore profile document. It does
-        // NOT delete the person's actual Firebase Auth account — the
-        // client SDK has no permission to delete other users. They would
-        // still be able to log in afterward (Login.jsx would just treat
-        // them as a role-less "user" since their profile doc is gone).
-        // To fully remove a user (Auth + Firestore), you need a backend
-        // Cloud Function using the Firebase Admin SDK's deleteUser(uid).
-        await deleteDoc(doc(db, "users", id));
-        setUsers((prev) => prev.filter((u) => u.id !== id));
-        showToast(`"${name}"'s profile has been deleted. Their login will still work until the Auth account is also removed (requires a backend function).`);
-      } catch (err) {
-        console.error(err);
-        showToast("Failed to delete user.", "error");
-      }
-    });
-  };
-
-  const handleRoleChange = (user, newRole) => {
+  // Change a user's account status: "active" | "suspended" | "banned"
+  const changeStatus = (user, newStatus) => {
     if (user.id === currentUid) {
-      showToast("You can't change your own role from here.", "error");
+      showToast("You can't change your own account status.", "error");
       return;
     }
-    if (newRole === user.role) return;
 
-    ask(`Change ${user.name || "this user"}'s role to "${ROLE_STYLE[newRole]?.label || newRole}"?`, async () => {
+    const name = user.name || "this user";
+    const copy = {
+      suspended: { q: `Suspend ${name}? They won't be able to sign in until you reactivate them.`, label: "Suspend", done: "suspended", danger: true },
+      banned:    { q: `Ban ${name}? They won't be able to sign in.`, label: "Ban", done: "banned", danger: true },
+      active:    { q: `Reactivate ${name}? They'll be able to sign in again.`, label: "Reactivate", done: "reactivated", danger: false },
+    }[newStatus];
+
+    ask(copy.q, async () => {
       setConfirm(null);
       try {
-        await updateDoc(doc(db, "users", user.id), { role: newRole });
-        setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, role: newRole } : u));
-        showToast(`${user.name || "User"} is now ${ROLE_STYLE[newRole]?.label || newRole}.`);
+        await updateDoc(doc(db, "users", user.id), {
+          status: newStatus,
+          statusUpdatedAt: serverTimestamp(),
+          statusUpdatedBy: currentUid,
+        });
+        setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)));
+        showToast(`${user.name || "User"} has been ${copy.done}.`);
       } catch (err) {
         console.error(err);
-        showToast("Failed to update role.", "error");
+        showToast("Failed to update account status.", "error");
       }
-    });
+    }, { confirmLabel: copy.label, danger: copy.danger });
   };
 
   const roleFiltered = roleFilter === "all" ? users : users.filter((u) => (u.role || "adopter") === roleFilter);
-  const filtered = roleFiltered.filter((u) => {
+  const statusFiltered = statusFilter === "all" ? roleFiltered : roleFiltered.filter((u) => getStatus(u) === statusFilter);
+  const filtered = statusFiltered.filter((u) => {
     const q = search.toLowerCase();
     return (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
   });
@@ -188,14 +186,8 @@ export default function Users() {
         .um-name-cell { display:flex; align-items:center; gap:10px; }
         .um-name { font-weight:700; color:#1a2e1a; }
         .um-you-tag { font-size:0.68rem; font-weight:800; color:#9aaa9a; margin-left:6px; }
-        .um-email { font-size:0.75rem; color:#9aaa9a; }
 
-        .um-role-select {
-          padding:6px 10px; border-radius:8px; border:2px solid #e8f0e8;
-          font-size:0.78rem; font-weight:700; font-family:'DM Sans',sans-serif;
-          cursor:pointer; outline:none; background:white;
-        }
-        .um-role-select:disabled { cursor:not-allowed; opacity:0.6; }
+        .um-pill { display:inline-block; font-size:0.74rem; font-weight:800; padding:4px 10px; border-radius:99px; white-space:nowrap; }
 
         .um-actions { display:flex; gap:8px; align-items:center; }
         .um-btn {
@@ -203,9 +195,13 @@ export default function Users() {
           font-weight:700; cursor:pointer; transition:all 0.18s; font-family:'DM Sans',sans-serif;
           white-space:nowrap;
         }
-        .um-btn-del { background:#ffebee; color:#c62828; }
-        .um-btn-del:hover:not(:disabled) { background:#c62828; color:white; }
-        .um-btn-del:disabled { background:#f5f5f5; color:#bbb; cursor:not-allowed; }
+        .um-btn:disabled { background:#f5f5f5; color:#bbb; cursor:not-allowed; }
+        .um-btn-suspend { background:#fff8e1; color:#f57f17; }
+        .um-btn-suspend:hover:not(:disabled) { background:#f57f17; color:white; }
+        .um-btn-ban { background:#ffebee; color:#c62828; }
+        .um-btn-ban:hover:not(:disabled) { background:#c62828; color:white; }
+        .um-btn-restore { background:#e8f5e9; color:#2e7d32; }
+        .um-btn-restore:hover:not(:disabled) { background:#2e7d32; color:white; }
 
         .um-empty { text-align:center; padding:60px 20px; color:#9aaa9a; }
         .um-empty-icon { font-size:2.5rem; margin-bottom:10px; }
@@ -219,11 +215,11 @@ export default function Users() {
 
       <div className="um-header">
         <div className="um-title">User Management</div>
-        <div className="um-sub">View, search, and manage registered users.</div>
+        <div className="um-sub">View and search users, and suspend, ban or reactivate accounts.</div>
       </div>
 
       <div className="um-filter-row">
-        {FILTERS.map((f) => (
+        {ROLE_FILTERS.map((f) => (
           <button
             key={f}
             className={`um-filter-btn ${roleFilter === f ? "active" : ""}`}
@@ -232,6 +228,20 @@ export default function Users() {
             {f === "all"
               ? `All (${users.length})`
               : `${ROLE_STYLE[f]?.label} (${users.filter(u => (u.role || "adopter") === f).length})`}
+          </button>
+        ))}
+      </div>
+
+      <div className="um-filter-row">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f}
+            className={`um-filter-btn ${statusFilter === f ? "active" : ""}`}
+            onClick={() => setStatusFilter(f)}
+          >
+            {f === "all"
+              ? "Any status"
+              : `${STATUS_STYLE[f].label} (${users.filter(u => getStatus(u) === f).length})`}
           </button>
         ))}
       </div>
@@ -265,6 +275,7 @@ export default function Users() {
                 <th>User</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Status</th>
                 <th>Joined</th>
                 <th>Actions</th>
               </tr>
@@ -273,7 +284,10 @@ export default function Users() {
               {filtered.map((user) => {
                 const role = user.role || "adopter";
                 const rs = ROLE_STYLE[role] || { bg: "#f5f5f5", color: "#666", label: role };
+                const status = getStatus(user);
+                const ss = STATUS_STYLE[status];
                 const isSelf = user.id === currentUid;
+                const selfTitle = isSelf ? "You can't change your own account status." : undefined;
                 return (
                   <tr key={user.id}>
                     <td>
@@ -289,30 +303,44 @@ export default function Users() {
                     </td>
                     <td style={{ color: "#666" }}>{user.email || "—"}</td>
                     <td>
-                      <select
-                        className="um-role-select"
-                        value={role}
-                        disabled={isSelf}
-                        title={isSelf ? "You can't change your own role here." : undefined}
-                        style={{ color: rs.color, borderColor: rs.color + "55" }}
-                        onChange={(e) => handleRoleChange(user, e.target.value)}
-                      >
-                        {ROLE_OPTIONS.map((r) => (
-                          <option key={r} value={r}>{ROLE_STYLE[r].label}</option>
-                        ))}
-                      </select>
+                      <span className="um-pill" style={{ background: rs.bg, color: rs.color }}>{rs.label}</span>
+                    </td>
+                    <td>
+                      <span className="um-pill" style={{ background: ss.bg, color: ss.color }}>{ss.label}</span>
                     </td>
                     <td style={{ color: "#888", fontSize: "0.82rem" }}>{formatDate(user.createdAt)}</td>
                     <td>
                       <div className="um-actions">
-                        <button
-                          className="um-btn um-btn-del"
-                          disabled={isSelf}
-                          title={isSelf ? "You can't delete your own account here." : undefined}
-                          onClick={() => handleDelete(user.id, user.name)}
-                        >
-                          Delete
-                        </button>
+                        {status === "active" && (
+                          <button
+                            className="um-btn um-btn-suspend"
+                            disabled={isSelf}
+                            title={selfTitle}
+                            onClick={() => changeStatus(user, "suspended")}
+                          >
+                            Suspend
+                          </button>
+                        )}
+                        {status !== "banned" && (
+                          <button
+                            className="um-btn um-btn-ban"
+                            disabled={isSelf}
+                            title={selfTitle}
+                            onClick={() => changeStatus(user, "banned")}
+                          >
+                            Ban
+                          </button>
+                        )}
+                        {status !== "active" && (
+                          <button
+                            className="um-btn um-btn-restore"
+                            disabled={isSelf}
+                            title={selfTitle}
+                            onClick={() => changeStatus(user, "active")}
+                          >
+                            {status === "banned" ? "Unban" : "Reactivate"}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -324,7 +352,15 @@ export default function Users() {
       </div>
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
-      {confirm && <ConfirmDialog message={confirm.message} onConfirm={confirm.onConfirm} onCancel={() => setConfirm(null)} />}
+      {confirm && (
+        <ConfirmDialog
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          danger={confirm.danger}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   );
 }

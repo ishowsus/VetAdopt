@@ -11,6 +11,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { reserveUniqueAccessCode } from "../accessCode";
+import { sendAccessCodeEmail } from "../sendAccessCodeEmail";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=1200&q=80";
@@ -121,23 +123,49 @@ function Register() {
 
     setErrorMsg("");
     setLoading(true);
+
+    // Track progress so a failure can be reported and cleaned up properly.
+    let step = "creating the account";
+    let createdUser = null;
+    let profileSaved = false;
+
     try {
       // 1. Create the account in Firebase Auth
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      createdUser = user;
+      step = "setting the display name";
       await updateProfile(user, { displayName: name });
 
-      // 2. Save the profile. Vets and shelters start as "pending" until an admin
-      //    approves them. (Firestore rules enforce this, so it can't be skipped.)
+      // 2. Reserve a unique 6-digit access code for this user. The user needs
+      //    it (plus email + password) every time they sign in.
+      step = "reserving the access code (accessCodes rules)";
+      const accessCode = await reserveUniqueAccessCode(user.uid);
+
+      // 3. Save the profile. Everyone starts "active"; admins can later
+      //    suspend or ban the account from the Users page.
+      step = "saving the profile (users rules)";
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         name,
         email,
         role,
-        status: role === "adopter" ? "approved" : "pending",
+        status: "active",
+        accessCode,
         createdAt: new Date().toISOString(),
       });
+      profileSaved = true;
 
-      // 3. Email the verification link
+      // 4. Email the access code. If that fails, we show the code on the login
+      //    page instead so the user isn't locked out.
+      let codeEmailSent = true;
+      try {
+        await sendAccessCodeEmail({ email, name, code: accessCode });
+      } catch (err) {
+        console.error("Access code email failed:", err);
+        codeEmailSent = false;
+      }
+
+      // 5. Email the verification link
       let emailSent = true;
       try {
         await sendEmailVerification(user);
@@ -146,12 +174,41 @@ function Register() {
         emailSent = false;
       }
 
-      // 4. Not signed in until the email is verified
+      // 6. Not signed in until the email is verified. The code is only passed
+      //    along (and shown) when the email couldn't be sent.
       await signOut(auth);
-      navigate("/login", { replace: true, state: { registered: true, email, role, emailSent } });
+      navigate("/login", {
+        replace: true,
+        state: {
+          registered: true,
+          email,
+          role,
+          emailSent,
+          codeEmailSent,
+          accessCode: codeEmailSent ? undefined : accessCode,
+        },
+      });
     } catch (error) {
-      console.error(error);
-      setErrorMsg(getAuthErrorMessage(error));
+      console.error(`Registration failed while ${step}:`, error);
+
+      // If the account was created but the profile never got saved, remove the
+      // half-made account so the person can simply try again with the same email
+      // (otherwise they'd hit "email already in use" with no profile behind it).
+      if (createdUser && !profileSaved) {
+        try {
+          await createdUser.delete();
+        } catch (cleanupErr) {
+          console.error("Couldn't remove the incomplete account:", cleanupErr);
+        }
+      }
+
+      if (error.code === "permission-denied") {
+        setErrorMsg(
+          `Firestore blocked the sign-up while ${step}. Check that your security rules are published, then try again.`
+        );
+      } else {
+        setErrorMsg(getAuthErrorMessage(error));
+      }
     } finally {
       setLoading(false);
     }
@@ -328,7 +385,7 @@ function Register() {
       `}</style>
 
       <div className="auth-split-form-col">
-        <div className="auth-split-brand">🐾 VetAdopt</div>
+        <div className="auth-split-brand">VETADOPT</div>
 
         <div className="auth-split-center">
           <motion.div
@@ -376,15 +433,14 @@ function Register() {
               <motion.div variants={itemVariants} className="input-group">
                 <label htmlFor="role">Register As</label>
                 <select id="role" value={formData.role} onChange={updateField("role")}>
-                  <option value="adopter">🐾 Adopter</option>
-                  <option value="veterinarian">🩺 Veterinarian</option>
-                  <option value="shelter">🏠 Shelter Owner</option>
+                  <option value="adopter">Adopter</option>
+                  <option value="veterinarian">Veterinarian</option>
+                  <option value="shelter">Shelter Owner</option>
                 </select>
-                {formData.role !== "adopter" && (
-                  <div className="role-hint">
-                    Veterinarian and shelter accounts need administrator approval before you can sign in.
-                  </div>
-                )}
+                <div className="role-hint">
+                  We'll email you a unique 6-digit access code after you sign up. You need it to sign in.
+                </div>
+                
               </motion.div>
 
               <motion.div variants={itemVariants} className="input-group">

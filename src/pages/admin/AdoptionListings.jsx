@@ -53,7 +53,7 @@ function AdoptionListings() {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>🏠 Adopter Pet Listings</h2>
+      <h2 style={styles.title}>Adopter Pet Listings</h2>
       <p style={styles.subtitle}>
         Pets that adopters submitted through "Rehome a Pet." Approve to publish on the Adopt page.
       </p>

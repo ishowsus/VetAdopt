@@ -4,10 +4,10 @@ import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "../../firebase";
 
 const CARDS = [
-  { key: "users", label: "Registered Users", icon: "👥", color: "#2e7d32", light: "#e8f5e9", path: "/admin/users" },
-  { key: "applications", label: "Adoption Requests", icon: "🐾", color: "#f57f17", light: "#fff8e1", path: "/admin/applications" },
-  { key: "appointments", label: "Vet Appointments", icon: "🩺", color: "#0288d1", light: "#e1f5fe", path: "/admin/appointments" },
-  { key: "reports", label: "Pending Reports", icon: "📋", color: "#d32f2f", light: "#ffebee", path: "/admin/reports" },
+  { key: "users", label: "Registered Users", icon: "", color: "#2e7d32", light: "#e8f5e9", path: "/admin/users" },
+  { key: "applications", label: "Adoption Requests", icon: "", color: "#f57f17", light: "#fff8e1", path: "/admin/applications" },
+  { key: "appointments", label: "Vet Appointments", icon: "", color: "#0288d1", light: "#e1f5fe", path: "/admin/appointments" },
+  { key: "reports", label: "Pending Reports", icon: "", color: "#d32f2f", light: "#ffebee", path: "/admin/reports" },
 ];
 
 const QUICK_LINKS = [

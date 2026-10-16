@@ -28,10 +28,10 @@ const NAV_GROUPS = [
   {
     label: "Management",
     links: [
-      { to: "/admin/users",   label: "Users",   icon: "👥" },
-      { to: "/admin/adoption-listings", label: "Adoption Listings", icon: "🏠" },
-      { to: "/admin/reports", label: "Reports", icon: "📑" },
-      { to: "/admin/animals", label: "Animals", icon: "🐾" },
+      { to: "/admin/users",   label: "Users",   icon: "" },
+      { to: "/admin/adoption-listings", label: "Adoption Listings", icon: "" },
+      { to: "/admin/reports", label: "Reports", icon: "" },
+      { to: "/admin/animals", label: "Animals", icon: "" },
     ],
   },
   {

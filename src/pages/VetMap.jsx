@@ -411,9 +411,9 @@ export default function VetMap() {
       {/* ── Topbar ── */}
       <header className="vm-topbar">
         <div className="vm-brand">
-          <span className="vm-brand-icon">🐾</span>
+          <span className="vm-brand-icon"></span>
           <div>
-            <div className="vm-brand-text">VetAdopt</div>
+            <div className="vm-brand-text">VETADOPT</div>
             <div className="vm-brand-sub">Cebu City</div>
           </div>
         </div>
@@ -556,7 +556,7 @@ export default function VetMap() {
                       <div key={appt.id} className="vm-appt-card" style={{ animationDelay: `${i * 60}ms` }}>
                         <span className="vm-appt-status" style={{ background: s.bg, color: s.color }}>{appt.status}</span>
                         <div className="vm-appt-vet">{appt.vetName}</div>
-                        {appt.petName && <div className="vm-appt-service">🐾 {appt.petName}</div>}
+                        {appt.petName && <div className="vm-appt-service">{appt.petName}</div>}
                         <div className="vm-appt-service">🏷️ {appt.service}</div>
                         <div className="vm-appt-meta">
                           <span>📅 {formatDate(appt.date)}</span>

@@ -9,10 +9,10 @@ const PETS = [
 ];
 
 const FEATURES = [
-  { icon: "🩺", title: "Veterinary-Certified Profiles", desc: "Every listed animal undergoes comprehensive health screening, vaccination, and spay/neuter status checks." },
-  { icon: "🎯", title: "Smart Matchmaker Engine", desc: "Our algorithm matches adopters with pets based on living space, lifestyle, schedule, and experience level." },
-  { icon: "🛡️", title: "Verified Partner Shelters", desc: "Direct network integration with registered animal welfare organizations and municipal pounds across Metro Cebu." },
-  { icon: "📊", title: "Post-Adoption Tracking", desc: "Digital health logs and reminder schedules for vaccines, check-ups, and post-adoption wellness follow-ups." },
+  { icon: "", title: "Veterinary-Certified Profiles", desc: "Every listed animal undergoes comprehensive health screening, vaccination, and spay/neuter status checks." },
+  { icon: "", title: "Smart Matchmaker Engine", desc: "Our algorithm matches adopters with pets based on living space, lifestyle, schedule, and experience level." },
+  { icon: "", title: "Verified Partner Shelters", desc: "Direct network integration with registered animal welfare organizations and municipal pounds across Metro Cebu." },
+  { icon: "", title: "Post-Adoption Tracking", desc: "Digital health logs and reminder schedules for vaccines, check-ups, and post-adoption wellness follow-ups." },
 ];
 
 const TESTIMONIALS = [
@@ -22,10 +22,10 @@ const TESTIMONIALS = [
 ];
 
 const STATS = [
-  { value: 5200, suffix: "+", label: "Verified Rehomes", icon: "🏠" },
-  { value: 120, suffix: "+", label: "Vet Partner Clinics", icon: "🩺" },
-  { value: 98.4, suffix: "%", decimals: 1, label: "Successful Matches", icon: "❤️" },
-  { value: 24, suffix: "/7", label: "Digital Records Access", icon: "📋" },
+  { value: 5200, suffix: "+", label: "Verified Rehomes", icon: "" },
+  { value: 120, suffix: "+", label: "Vet Partner Clinics", icon: "" },
+  { value: 98.4, suffix: "%", decimals: 1, label: "Successful Matches", icon: "" },
+  { value: 24, suffix: "/7", label: "Digital Records Access", icon: "" },
 ];
 
 /* Reveal-on-scroll: observes every .va-reveal element */
@@ -335,7 +335,7 @@ export default function Home() {
       {/* ── NAVBAR ── */}
       <header className={scrolled ? "va-nav va-nav-solid" : "va-nav"}>
         <div className="va-nav-inner">
-          <button className="va-brand" onClick={() => navigate("/")}>🐾 Vet<em>Adopt</em></button>
+          <button className="va-brand" onClick={() => navigate("/")}>Vet<em>Adopt</em></button>
           <nav className="va-links">
             <button onClick={() => navigate("/adopt")}>Adopt</button>
             <button onClick={() => navigate("/petmatchmaker")}>Matchmaker</button>
@@ -385,7 +385,7 @@ export default function Home() {
             </div>
 
             <div className="va-hero-actions">
-              <button className="va-btn-ghost" onClick={() => navigate("/petmatchmaker")}>🎯 Take the Matchmaker Quiz</button>
+              <button className="va-btn-ghost" onClick={() => navigate("/petmatchmaker")}>🎯Take the Matchmaker Quiz</button>
             </div>
 
             <div className="va-hero-trust">
@@ -541,18 +541,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="va-footer">
-        <button className="va-brand" onClick={() => navigate("/")}>🐾 Vet<em>Adopt</em></button>
-        <div className="va-footer-links">
-          <button onClick={() => navigate("/adopt")}>Adopt</button>
-          <button onClick={() => navigate("/petmatchmaker")}>Matchmaker</button>
-          <a href="#how">How It Works</a>
-          <a href="#stories">Stories</a>
-        </div>
-        <p>© 2026 VetAdopt · Veterinary-backed pet adoption in Metro Cebu 🐾</p>
-      </footer>
     </div>
   );
 }

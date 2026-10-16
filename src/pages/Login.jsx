@@ -10,7 +10,8 @@ import {
   sendEmailVerification,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { reserveUniqueAccessCode } from "../accessCode";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1200&q=80";
@@ -39,6 +40,7 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -110,23 +112,52 @@ function Login() {
       const userData = userDoc.data();
 
       const role = String(userData.role || "adopter").trim().toLowerCase();
-      // Accounts created before approvals existed have no status: treat as approved.
-      // New sign-ups always get one (see Register.jsx).
-      const status = String(userData.status || "approved").trim().toLowerCase();
+      // Status is "active", "suspended" or "banned". Older accounts may still
+      // carry "approved"/"pending" or no status at all — those count as active.
+      const rawStatus = String(userData.status || "active").trim().toLowerCase();
+      const status = ["suspended", "banned"].includes(rawStatus) ? rawStatus : "active";
 
-      // 3. Vets and shelters must be approved by an administrator first
-      const needsApproval = ["veterinarian", "vet", "shelter"].includes(role);
-      if (needsApproval && status !== "approved") {
+      // 3. Banned / suspended accounts can't sign in
+      if (status === "banned") {
         await signOut(auth);
-        setErrorMsg(
-          status === "pending"
-            ? "Your account is waiting for administrator approval."
-            : "Your account hasn't been approved. Please contact support."
-        );
+        setErrorMsg("This account has been banned. Please contact support if you think this is a mistake.");
+        return;
+      }
+      if (status === "suspended") {
+        await signOut(auth);
+        setErrorMsg("This account is currently suspended. Please contact support.");
         return;
       }
 
-      // 4. Save logged in user (App.jsx reads this)
+      // 4. Check the unique 6-digit access code (admins are exempt)
+      if (role !== "admin") {
+        const storedCode = String(userData.accessCode || "");
+
+        // Account made before codes existed: issue one now and show it once.
+        if (!storedCode) {
+          const newCode = await reserveUniqueAccessCode(user.uid);
+          await updateDoc(doc(db, "users", user.uid), { accessCode: newCode });
+          await signOut(auth);
+          setErrorMsg(
+            `Your account now has an access code: ${newCode}. Save it, then sign in again using this code.`
+          );
+          return;
+        }
+
+        if (!/^\d{6}$/.test(accessCode.trim())) {
+          await signOut(auth);
+          setErrorMsg("Please enter your 6-digit access code.");
+          return;
+        }
+
+        if (accessCode.trim() !== storedCode) {
+          await signOut(auth);
+          setErrorMsg("Incorrect access code.");
+          return;
+        }
+      }
+
+      // 5. Save logged in user (App.jsx reads this)
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -141,7 +172,7 @@ function Login() {
       // Notify App.jsx
       window.dispatchEvent(new Event("authChange"));
 
-      // 5. Redirect based on role
+      // 6. Redirect based on role
       switch (role) {
         case "admin":
           navigate("/admin/dashboard");
@@ -265,6 +296,18 @@ function Login() {
           margin-bottom: 18px;
           line-height: 1.4;
         }
+
+        .code-box {
+          margin-top: 12px;
+          padding: 12px;
+          background: #fff;
+          border: 1px dashed #2e7d32;
+          border-radius: 10px;
+          text-align: center;
+        }
+        .code-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .code-value { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.3em; margin: 4px 0; }
+        .code-note { font-size: 0.8rem; }
 
         .input-group { margin-bottom: 18px; }
 
@@ -396,7 +439,7 @@ function Login() {
       `}</style>
 
       <div className="auth-split-form-col">
-        <div className="auth-split-brand">🐾 VetAdopt</div>
+        <div className="auth-split-brand">VETADOPT</div>
 
         <div className="auth-split-center">
           <motion.div
@@ -415,8 +458,15 @@ function Login() {
                 {justRegistered.emailSent === false
                   ? "Account created, but we couldn't send the verification email. Sign in below and we'll send a new link."
                   : `Account created! We sent a verification link to ${justRegistered.email}. Click it, then sign in.`}
-                {justRegistered.role !== "adopter" &&
-                  " Your account also needs administrator approval before you can sign in."}
+                {justRegistered.accessCode && (
+                  <div className="code-box">
+                    <div className="code-label">Your 6-digit access code</div>
+                    <div className="code-value">{justRegistered.accessCode}</div>
+                    <div className="code-note">
+                      Save it now — you'll need it every time you sign in.
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -474,6 +524,20 @@ function Login() {
                     )}
                   </button>
                 </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="input-group">
+                <label htmlFor="accessCode">Access Code</label>
+                <input
+                  id="accessCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="6-digit code (not needed for admins)"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                />
               </motion.div>
 
               <motion.div variants={itemVariants} className="forgot-password">

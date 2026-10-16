@@ -16,20 +16,20 @@ export const TOKENS = {
 };
 
 const NAV_PUBLIC = [
-  { to: "/",      label: "Home",       icon: "🏠" },
-  { to: "/about", label: "About",      icon: "ℹ️" },
+  { to: "/",      label: "Home",       icon: "" },
+  { to: "/about", label: "About",      icon: "" },
 ];
 
 const NAV_AUTH_SIMPLE = [
-  { to: "/vets",  label: "Vet Map",    icon: "📍" },
-  { to: "/quiz",  label: "Matchmaker", icon: "✨" },
+  { to: "/vets",  label: "Vet Map",    icon: "" },
+  { to: "/quiz",  label: "Matchmaker", icon: "" },
 ];
 
 const ADOPT_CATEGORIES = [
-  { to: "/adopt?type=Dog",    label: "Dogs",    icon: "🐶", blurb: "Loyal companions of every size" },
-  { to: "/adopt?type=Cat",    label: "Cats",    icon: "🐱", blurb: "Independent, affectionate housemates" },
-  { to: "/adopt?type=Rabbit", label: "Rabbits", icon: "🐰", blurb: "Quiet, gentle indoor pets" },
-  { to: "/adopt?type=Bird",   label: "Birds",   icon: "🦜", blurb: "Bright, social feathered friends" },
+  { to: "/adopt?type=Dog",    label: "Dogs",    icon: "", blurb: "Loyal companions of every size" },
+  { to: "/adopt?type=Cat",    label: "Cats",    icon: "", blurb: "Independent, affectionate housemates" },
+  { to: "/adopt?type=Rabbit", label: "Rabbits", icon: "", blurb: "Quiet, gentle indoor pets" },
+  { to: "/adopt?type=Bird",   label: "Birds",   icon: "", blurb: "Bright, social feathered friends" },
 ];
 
 export const NAVBAR_HEIGHT = 64;
@@ -535,13 +535,13 @@ export default function Navbar({ user }) {
       <header className="vet-navbar" ref={containerRef}>
         <div className="vet-navbar-inner">
           <NavLink to="/" className="vet-nav-brand" onClick={closeMobile}>
-            🐾 <span>VetAdopt</span>
+            <span>VETADOPT</span>
           </NavLink>
 
           {/* Desktop horizontal links */}
           <nav className="vet-nav-links">
             <NavLink to="/" style={navLinkStyle} end>
-              <span>🏠</span><span>Home</span>
+              <span></span><span>Home</span>
             </NavLink>
 
             {user && (
@@ -555,7 +555,7 @@ export default function Navbar({ user }) {
                   onClick={() => setAdoptOpen((o) => !o)}
                   aria-expanded={adoptOpen}
                 >
-                  <span>🐾</span><span>Adopt</span>
+                  <span></span><span>Adopt</span>
                   <span className="vet-nav-adopt-chevron">▾</span>
                 </button>
 
@@ -575,7 +575,7 @@ export default function Navbar({ user }) {
                       Not sure where to start? <strong>Take the Matchmaker quiz.</strong>
                     </p>
                     <NavLink to="/quiz" className="vet-mega-featured-cta" onClick={() => setAdoptOpen(false)}>
-                      Try it ✨
+                      Try it 
                     </NavLink>
                   </div>
                 </div>
@@ -583,7 +583,7 @@ export default function Navbar({ user }) {
             )}
 
             <NavLink to="/about" style={navLinkStyle}>
-              <span>ℹ️</span><span>About</span>
+              <span></span><span>About</span>
             </NavLink>
 
             {user &&
@@ -597,7 +597,7 @@ export default function Navbar({ user }) {
 
           <div className="vet-nav-actions">
             <NavLink to="/donate" className="vet-nav-donate">
-              ❤ Donate
+               Donate
             </NavLink>
 
             {user ? (
@@ -644,16 +644,16 @@ export default function Navbar({ user }) {
       <nav className={`vet-nav-mobile${mobileOpen ? " open" : ""}`} aria-hidden={!mobileOpen}>
         <div className="vet-nav-mobile-header">
           <span style={{ color: TOKENS.text, fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-            🐾 VetAdopt
+            VetAdopt
           </span>
           <button className="vet-nav-mobile-close" onClick={closeMobile} aria-label="Close menu">✕</button>
         </div>
 
         <NavLink to="/" style={navLinkStyle} end onClick={closeMobile}>
-          <span>🏠</span><span>Home</span>
+          <span></span><span>Home</span>
         </NavLink>
         <NavLink to="/about" style={navLinkStyle} onClick={closeMobile}>
-          <span>ℹ️</span><span>About</span>
+          <span></span><span>About</span>
         </NavLink>
 
         {user && (
@@ -663,7 +663,7 @@ export default function Navbar({ user }) {
               onClick={() => setMobileAdoptOpen((o) => !o)}
               aria-expanded={mobileAdoptOpen}
             >
-              <span>🐾 Adopt</span>
+              <span>Adopt</span>
               <span className="chev">▾</span>
             </button>
             <div className={`vet-nav-mobile-adopt-panel${mobileAdoptOpen ? " open" : ""}`}>
@@ -687,18 +687,18 @@ export default function Navbar({ user }) {
           <>
             <div className="vet-nav-mobile-section-label">Account</div>
             <NavLink to="/login" style={navLinkStyle} onClick={closeMobile}>
-              <span>🔑</span>
+              <span></span>
               <span>Login</span>
             </NavLink>
             <NavLink to="/register" style={navLinkStyle} onClick={closeMobile}>
-              <span>📝</span>
+              <span></span>
               <span>Register</span>
             </NavLink>
           </>
         )}
 
         <NavLink to="/donate" className="vet-nav-donate" onClick={closeMobile}>
-          ❤ Donate
+            Donate
         </NavLink>
 
         {user && (

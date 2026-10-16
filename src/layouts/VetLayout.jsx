@@ -4,11 +4,11 @@ import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
 const NAV_ITEMS = [
-  { to: "/vet/dashboard", label: "Dashboard", icon: "🏠" },
-  { to: "/vet/patients", label: "Patients", icon: "🐶" },
-  { to: "/vet/appointments", label: "Appointments", icon: "📅" },
-  { to: "/vet/medical-records", label: "Medical Records", icon: "📋" },
-  { to: "/vet/profile", label: "Profile", icon: "🩺" },
+  { to: "/vet/dashboard", label: "Dashboard", icon: "" },
+  { to: "/vet/patients", label: "Patients", icon: "" },
+  { to: "/vet/appointments", label: "Appointments", icon: "" },
+  { to: "/vet/medical-records", label: "Medical Records", icon: "" },
+  { to: "/vet/profile", label: "Profile", icon: "" },
 ];
 
 function VetLayout() {
@@ -51,7 +51,7 @@ function VetLayout() {
 
       {/* Mobile top bar */}
       <div className="vet-mobile-bar" style={styles.mobileBar}>
-        <span style={styles.mobileBrand}>🐾 VetPortal</span>
+        <span style={styles.mobileBrand}>VetPortal</span>
         <button
           style={styles.mobileToggle}
           onClick={() => setSidebarOpen((open) => !open)}
@@ -66,7 +66,7 @@ function VetLayout() {
         style={styles.sidebar}
       >
         <div style={styles.brand}>
-          <span style={styles.brandIcon}>🐾</span>
+          <span style={styles.brandIcon}></span>
           <span style={styles.brandText}>VetPortal</span>
         </div>
 

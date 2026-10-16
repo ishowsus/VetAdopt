@@ -5,11 +5,11 @@ import { auth } from "../firebase";
 import LogoutModal from "../components/LogoutModal";
 
 const NAV_ITEMS = [
-  { to: "/shelter/dashboard", label: "Dashboard", icon: "🏠" },
-  { to: "/shelter/pets", label: "My Pets", icon: "🐾" },
-  { to: "/shelter/adoption-requests", label: "Adoption Requests", icon: "📄" },
-  { to: "/shelter/donations", label: "Donations", icon: "💰" },
-  { to: "/shelter/profile", label: "Profile", icon: "👤" },
+  { to: "/shelter/dashboard", label: "Dashboard", icon: "" },
+  { to: "/shelter/pets", label: "My Pets", icon: "" },
+  { to: "/shelter/adoption-requests", label: "Adoption Requests", icon: "" },
+  { to: "/shelter/donations", label: "Donations", icon: "" },
+  { to: "/shelter/profile", label: "Profile", icon: "" },
 ];
 
 function ShelterLayout() {
@@ -85,7 +85,7 @@ function ShelterLayout() {
       {/* ── Top Navbar (desktop: full bar / mobile: brand + ☰) ── */}
       <header className="shelter-navbar" style={styles.navbar}>
         <div style={styles.navbarInner}>
-          <span style={styles.navbarBrand}>🏡 Shelter Portal</span>
+          <span style={styles.navbarBrand}>Shelter Portal</span>
 
           {/* Desktop links */}
           <nav className="shelter-nav-links" style={styles.navLinks}>

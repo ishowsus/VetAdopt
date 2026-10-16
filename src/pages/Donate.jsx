@@ -3,17 +3,17 @@ import { useState } from "react";
 const SUGGESTED = [100, 250, 500, 1000, 2500];
 
 const WALLETS = [
-  { id: "gcash", name: "GCash", icon: "💙", badge: "Most Popular" },
-  { id: "paymaya", name: "Maya", icon: "💚", badge: "Instant" },
-  { id: "grabpay", name: "GrabPay", icon: "🟢", badge: "Rewards" },
-  { id: "qrph", name: "QR Ph", icon: "🔳", badge: "Universal QR" },
+  { id: "gcash", name: "GCash", icon: "", badge: "Most Popular" },
+  { id: "paymaya", name: "Maya", icon: "", badge: "Instant" },
+  { id: "grabpay", name: "GrabPay", icon: "", badge: "Rewards" },
+  { id: "qrph", name: "QR Ph", icon: "", badge: "Universal QR" },
 ];
 
 const IMPACT = [
-  { emoji: "🍖", amount: 100, label: "feeds a rescue pet for a week" },
-  { emoji: "💉", amount: 500, label: "covers a full vaccination course" },
-  { emoji: "🏥", amount: 1000, label: "funds a vet checkup & meds" },
-  { emoji: "🏠", amount: 2500, label: "sponsors shelter for one month" },
+  { emoji: "", amount: 100, label: "feeds a rescue pet for a week" },
+  { emoji: "", amount: 500, label: "covers a full vaccination course" },
+  { emoji: "", amount: 1000, label: "funds a vet checkup & meds" },
+  { emoji: "", amount: 2500, label: "sponsors shelter for one month" },
 ];
 
 export default function DonateEWallet() {
@@ -178,7 +178,7 @@ export default function DonateEWallet() {
 
       <div className="dn-card">
         <div className="dn-hero">
-          <span className="dn-hero-icon">🐾</span>
+          <span className="dn-hero-icon"></span>
           <h1>
             Give a pet a<br />
             <em>second chance</em>

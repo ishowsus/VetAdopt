@@ -2,16 +2,16 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const TEAM = [
-  { id: 1, name: "Nadine Emeterio", role: "Frontend Developer", emoji: "💻", img: "https://scontent.fceb6-1.fna.fbcdn.net/v/t1.15752-9/753627580_1230358100162511_582822661615092146_n.jpg?stp=dst-jpg_tt6&cstp=mx957x1068&ctp=s957x1068&_nc_cat=100&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeHPhhkiqTTkZ64XxfhNP2asotIvXX1cnh-i0i9dfVyeHwAuUkqx-dVM-lnqyuKmvwUBN6yNjBG2ef_nTZ-10Lqu&_nc_ohc=S0GYKolR55IQ7kNvwEmYUOy&_nc_oc=AdqMpntZR98kGwvaq0QqZzor3pSee1gP2pBYr93uJgMiJe5y67LQs2cFNjIT-pBB8o6eTFwNKLDR6u5DliapNUoG&_nc_zt=23&_nc_ht=scontent.fceb6-1.fna&_nc_ss=7b2a8&oh=03_Q7cD5wFgyXEljH7J3zGQLw3RieTxMiKFkXwSuBCzHyT1pQTN1A&oe=6A8D3243", bio: "Crafts beautiful, accessible interfaces with a passion for animals and clean code." },
-  { id: 2, name: "Nash Lapincao", role: "Backend Developer", emoji: "⚙️", img: "https://scontent.fceb6-3.fna.fbcdn.net/v/t1.15752-9/749076600_1009034925287848_4561687752991525400_n.jpg?stp=dst-jpg_tt6&cstp=mx720x667&ctp=s720x667&_nc_cat=106&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEHTB-XEuuMMvMoSTN7IybPM2KsusDkmpAzYqy6wOSakLtPrVgrY-t6-qyqZDSkC-QWwFeL_Xnt8XeqI_R7xw3F&_nc_ohc=ER4Wpw96a74Q7kNvwGddOdn&_nc_oc=AdolhpVs3WuiAaL2vIKLF_rF9ZAjIfxuu3_YoLJsNfNLfv3oOaFlF1443Er92wvBa9D-yhsnL6ocDXKT0IW9YXTc&_nc_zt=23&_nc_ht=scontent.fceb6-3.fna&_nc_ss=782a8&oh=03_Q7cD5wHMybd67rcT0tKEGM9cIsEnA7Y03EMMpoNXQ7XvaOCdYw&oe=6A8D5483", bio: "Architects the systems that keep VetAdopt fast, secure, and reliable." },
-  { id: 3, name: "Yvonne Pono", role: "UI/UX Designer", emoji: "🎨", img: "https://scontent.fceb2-1.fna.fbcdn.net/v/t1.15752-9/752786512_1738032480954078_2577240218948331305_n.jpg?stp=dst-jpg_tt6&cstp=mx2111x2894&ctp=s2048x2048&_nc_cat=108&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEjq_AJkYA0lygsOLRrm31U6yK6nnYQDgPrIrqedhAOA9D-yR6M8Z0mpxjsQ8fKjedsWZWjfKK49DM9Fhmfuc9N&_nc_ohc=HLehshkAEvQQ7kNvwFeuE9P&_nc_oc=Ado_EfYPgXcWiqnf_u7lQ0p5NG0xFySwf-R5skvwSqpwO3h2K7vYmWHyL9rXNQNaHxTjwe5YZ2TPrw1Xuuzfyf_q&_nc_zt=23&_nc_ht=scontent.fceb2-1.fna&_nc_ss=782a8&oh=03_Q7cD5wGHXkkX0yYmSQLEIFJZ6n3grUO0WQiGDKJIo4WbnHli7w&oe=6A8D48CC", bio: "Designs every pixel with empathy — for both humans and animals." },
-  { id: 4, name: "Lhester Genterone", role: "Tester", emoji: "🚀", img: "https://scontent.fceb2-2.fna.fbcdn.net/v/t1.15752-9/748873653_1078073534786010_2469005136269748968_n.jpg?stp=dst-jpg_tt6&cstp=mx1254x1254&ctp=s1254x1254&_nc_cat=102&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeFAgryU-0tVCoEBBhZ3ERIPGfrZHidsnycZ-tkeJ2yfJ0KzQ5T2j7tnIV4AzOipdhejRzSbXQ9HRT-t5YJ6VKko&_nc_ohc=-ZTt3lbwL6MQ7kNvwEf0RJO&_nc_oc=AdrDmQyK5zxR8RO9XTsjAAKhdN9uO56SEAJ7YJwt9NsbDwwz4CN9gCcMmrSnedYT1rV5L8Kua6m6pmZjEig51sRl&_nc_zt=23&_nc_ht=scontent.fceb2-2.fna&_nc_ss=7b2a8&oh=03_Q7cD5wG_mOnq_vKKCsbaf1CokW8GWvmT4wJf0WXNkuJt-2i3dQ&oe=6A8D4A38", bio: "Bridges front and back, shipping features that make adoption effortless." },
+  { id: 1, name: "Nadine Emeterio", role: "Frontend Developer", emoji: "", img: "https://scontent.fceb6-1.fna.fbcdn.net/v/t1.15752-9/753627580_1230358100162511_582822661615092146_n.jpg?stp=dst-jpg_tt6&cstp=mx957x1068&ctp=s957x1068&_nc_cat=100&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeHPhhkiqTTkZ64XxfhNP2asotIvXX1cnh-i0i9dfVyeHwAuUkqx-dVM-lnqyuKmvwUBN6yNjBG2ef_nTZ-10Lqu&_nc_ohc=S0GYKolR55IQ7kNvwEmYUOy&_nc_oc=AdqMpntZR98kGwvaq0QqZzor3pSee1gP2pBYr93uJgMiJe5y67LQs2cFNjIT-pBB8o6eTFwNKLDR6u5DliapNUoG&_nc_zt=23&_nc_ht=scontent.fceb6-1.fna&_nc_ss=7b2a8&oh=03_Q7cD5wFgyXEljH7J3zGQLw3RieTxMiKFkXwSuBCzHyT1pQTN1A&oe=6A8D3243", bio: "Crafts beautiful, accessible interfaces with a passion for animals and clean code." },
+  { id: 2, name: "Nash Lapincao", role: "Backend Developer", emoji: "", img: "https://scontent.fceb6-3.fna.fbcdn.net/v/t1.15752-9/749076600_1009034925287848_4561687752991525400_n.jpg?stp=dst-jpg_tt6&cstp=mx720x667&ctp=s720x667&_nc_cat=106&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEHTB-XEuuMMvMoSTN7IybPM2KsusDkmpAzYqy6wOSakLtPrVgrY-t6-qyqZDSkC-QWwFeL_Xnt8XeqI_R7xw3F&_nc_ohc=ER4Wpw96a74Q7kNvwGddOdn&_nc_oc=AdolhpVs3WuiAaL2vIKLF_rF9ZAjIfxuu3_YoLJsNfNLfv3oOaFlF1443Er92wvBa9D-yhsnL6ocDXKT0IW9YXTc&_nc_zt=23&_nc_ht=scontent.fceb6-3.fna&_nc_ss=782a8&oh=03_Q7cD5wHMybd67rcT0tKEGM9cIsEnA7Y03EMMpoNXQ7XvaOCdYw&oe=6A8D5483", bio: "Architects the systems that keep VetAdopt fast, secure, and reliable." },
+  { id: 3, name: "Yvonne Pono", role: "UI/UX Designer", emoji: "", img: "https://scontent.fceb2-1.fna.fbcdn.net/v/t1.15752-9/752786512_1738032480954078_2577240218948331305_n.jpg?stp=dst-jpg_tt6&cstp=mx2111x2894&ctp=s2048x2048&_nc_cat=108&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEjq_AJkYA0lygsOLRrm31U6yK6nnYQDgPrIrqedhAOA9D-yR6M8Z0mpxjsQ8fKjedsWZWjfKK49DM9Fhmfuc9N&_nc_ohc=HLehshkAEvQQ7kNvwFeuE9P&_nc_oc=Ado_EfYPgXcWiqnf_u7lQ0p5NG0xFySwf-R5skvwSqpwO3h2K7vYmWHyL9rXNQNaHxTjwe5YZ2TPrw1Xuuzfyf_q&_nc_zt=23&_nc_ht=scontent.fceb2-1.fna&_nc_ss=782a8&oh=03_Q7cD5wGHXkkX0yYmSQLEIFJZ6n3grUO0WQiGDKJIo4WbnHli7w&oe=6A8D48CC", bio: "Designs every pixel with empathy — for both humans and animals." },
+  { id: 4, name: "Lhester Genterone", role: "Tester", emoji: "", img: "https://scontent.fceb2-2.fna.fbcdn.net/v/t1.15752-9/748873653_1078073534786010_2469005136269748968_n.jpg?stp=dst-jpg_tt6&cstp=mx1254x1254&ctp=s1254x1254&_nc_cat=102&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeFAgryU-0tVCoEBBhZ3ERIPGfrZHidsnycZ-tkeJ2yfJ0KzQ5T2j7tnIV4AzOipdhejRzSbXQ9HRT-t5YJ6VKko&_nc_ohc=-ZTt3lbwL6MQ7kNvwEf0RJO&_nc_oc=AdrDmQyK5zxR8RO9XTsjAAKhdN9uO56SEAJ7YJwt9NsbDwwz4CN9gCcMmrSnedYT1rV5L8Kua6m6pmZjEig51sRl&_nc_zt=23&_nc_ht=scontent.fceb2-2.fna&_nc_ss=7b2a8&oh=03_Q7cD5wG_mOnq_vKKCsbaf1CokW8GWvmT4wJf0WXNkuJt-2i3dQ&oe=6A8D4A38", bio: "Bridges front and back, shipping features that make adoption effortless." },
 ];
 
 const VALUES = [
-  { icon: "🏠", title: "Quick Listing", desc: "Shelters and private owners can list a pet in under 2 minutes with our guided form and photo uploader." },
-  { icon: "🩺", title: "Vet Verified", desc: "Direct integration with Cebu clinics ensures every pet's health history is honest, current, and complete." },
-  { icon: "🤝", title: "Community First", desc: "10,000+ animal lovers across the Philippines support and guide new adopters through every step." },
+  { icon: "", title: "Quick Listing", desc: "Shelters and private owners can list a pet in under 2 minutes with our guided form and photo uploader." },
+  { icon: "", title: "Vet Verified", desc: "Direct integration with Cebu clinics ensures every pet's health history is honest, current, and complete." },
+  { icon: "", title: "Community First", desc: "10,000+ animal lovers across the Philippines support and guide new adopters through every step." },
 ];
 
 const MILESTONES = [
@@ -172,7 +172,7 @@ export default function About() {
           padding:120px 24px; text-align:center;
           background:linear-gradient(135deg,#f1f8f1,#e8f5e9); position:relative; overflow:hidden;
         }
-        .au-cta::before { content:'🐾'; position:absolute; font-size:22rem; opacity:0.04; right:-60px; top:-60px; pointer-events:none; line-height:1; }
+        .au-cta::before { content:''; position:absolute; font-size:22rem; opacity:0.04; right:-60px; top:-60px; pointer-events:none; line-height:1; }
         .au-cta h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(2.2rem,5vw,3.8rem); font-weight:700; color:#1a2e1a; line-height:1.15; margin-bottom:14px; }
         .au-cta h2 em { font-style:italic; color:#2e7d32; }
         .au-cta p { font-size:0.95rem; color:#888; margin-bottom:36px; }
@@ -213,7 +213,7 @@ export default function About() {
         <div className="au-hero-bg" />
         <div className="au-hero-gradient" />
         <div className="au-hero-inner">
-          <div className="au-hero-eyebrow">🐾 Our Story</div>
+          <div className="au-hero-eyebrow">Our Story</div>
           <h1>Built for animals.<br /><em>Driven by love.</em></h1>
           <p className="au-hero-sub">We're a small team with a big mission — to make pet adoption in Cebu transparent, joyful, and accessible to everyone.</p>
           <div className="au-hero-scroll"><div className="au-hero-line" /> Scroll to explore</div>
@@ -316,7 +316,7 @@ export default function About() {
         <p className="reveal">Browse pets waiting for a home, or support our mission with a donation.</p>
         <div className="au-cta-btns reveal">
           <button className="au-btn-primary" onClick={() => navigate("/adopt")}>Explore Pets →</button>
-          <button className="au-btn-ghost" onClick={() => navigate("/donate")}>Support Us 🐾</button>
+          <button className="au-btn-ghost" onClick={() => navigate("/donate")}>Support Us</button>
         </div>
       </section>
     </div>
