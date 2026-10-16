@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion } from "motion/react";
 
@@ -12,9 +12,13 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { reserveUniqueAccessCode } from "../accessCode";
+import { sendAccessCodeEmail } from "../sendAccessCodeEmail";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1200&q=80";
+
+const EMPTY_DIGITS = ["", "", "", "", "", ""];
+const MAX_CODE_ATTEMPTS = 5;
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -40,7 +44,16 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [accessCode, setAccessCode] = useState("");
+  // Two-step sign-in: "credentials" (email + password) then "code" (6-digit access code)
+  const [step, setStep] = useState("credentials");
+  const [pending, setPending] = useState(null); // account waiting for its code
+  const [digits, setDigits] = useState(EMPTY_DIGITS);
+  const [attempts, setAttempts] = useState(0);
+  const [notice, setNotice] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const inputRefs = useRef([]);
+  const pendingRef = useRef(null);
+  const doneRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -64,7 +77,175 @@ function Login() {
     }
   };
 
-  // Login Function
+  // Resend-button countdown
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  // If someone leaves the page in the middle of step 2, don't leave a signed-in
+  // Firebase session behind. (Finishing the login sets doneRef first.)
+  useEffect(() => {
+    return () => {
+      if (pendingRef.current && !doneRef.current) signOut(auth).catch(() => {});
+    };
+  }, []);
+
+  // Everything is verified: save the user for the app and go to their dashboard.
+  const finishLogin = ({ user, userData, role, status }) => {
+    doneRef.current = true;
+
+    // Save logged in user (App.jsx reads this)
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        uid: user.uid,
+        name: userData.name || user.displayName || "",
+        email: user.email,
+        role,
+        status,
+      })
+    );
+
+    // Notify App.jsx
+    window.dispatchEvent(new Event("authChange"));
+
+    // Redirect based on role
+    switch (role) {
+      case "admin":
+        navigate("/admin/dashboard");
+        break;
+
+      case "veterinarian":
+      case "vet":
+        navigate("/vet/dashboard");
+        break;
+
+      case "shelter":
+        navigate("/shelter/dashboard");
+        break;
+
+      default:
+        navigate("/adopt");
+    }
+  };
+
+  // Step 2: check the 6-digit code
+  const verifyCode = async (codeStr) => {
+    if (!pending) return;
+
+    if (!/^\d{6}$/.test(codeStr)) {
+      setErrorMsg("Please enter all 6 digits.");
+      return;
+    }
+
+    if (codeStr !== pending.storedCode) {
+      const used = attempts + 1;
+      setAttempts(used);
+      setDigits(EMPTY_DIGITS);
+      inputRefs.current[0]?.focus();
+
+      if (used >= MAX_CODE_ATTEMPTS) {
+        try { await signOut(auth); } catch { /* ignore */ }
+        pendingRef.current = null;
+        setPending(null);
+        setStep("credentials");
+        setPassword("");
+        setErrorMsg("Too many incorrect codes. Please sign in again.");
+        return;
+      }
+
+      const left = MAX_CODE_ATTEMPTS - used;
+      setErrorMsg(`Incorrect access code. ${left} attempt${left === 1 ? "" : "s"} left.`);
+      return;
+    }
+
+    setErrorMsg("");
+    finishLogin(pending);
+  };
+
+  const handleDigitChange = (index, value) => {
+    const clean = value.replace(/\D/g, "");
+    const next = [...digits];
+
+    if (!clean) {
+      next[index] = "";
+      setDigits(next);
+      return;
+    }
+
+    // Normally one digit; also copes with autofill dropping several in at once
+    let i = index;
+    for (const ch of clean) {
+      if (i > 5) break;
+      next[i] = ch;
+      i++;
+    }
+    setDigits(next);
+    inputRefs.current[Math.min(i, 5)]?.focus();
+
+    if (next.every(Boolean)) verifyCode(next.join(""));
+  };
+
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      const next = [...digits];
+      next[index - 1] = "";
+      setDigits(next);
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      verifyCode(digits.join(""));
+    }
+  };
+
+  const handleDigitPaste = (e) => {
+    const text = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+    if (!text) return;
+    e.preventDefault();
+    const next = [...EMPTY_DIGITS];
+    text.split("").forEach((ch, i) => { next[i] = ch; });
+    setDigits(next);
+    inputRefs.current[Math.min(text.length, 5)]?.focus();
+    if (text.length === 6) verifyCode(text);
+  };
+
+  // Email the same code again (30s between sends)
+  const resendCode = async () => {
+    if (!pending || cooldown > 0) return;
+    setCooldown(30);
+    try {
+      await sendAccessCodeEmail({
+        email: pending.email,
+        name: pending.userData.name,
+        code: pending.storedCode,
+      });
+      setErrorMsg("");
+      setNotice(`We emailed your access code again to ${pending.email}. Check your spam folder too.`);
+    } catch (err) {
+      console.error("Access code email failed:", err);
+      setErrorMsg("We couldn't send the email right now. Please try again in a bit.");
+    }
+  };
+
+  // Go back to step 1 (and drop the half-finished Firebase session)
+  const backToLogin = async () => {
+    try { await signOut(auth); } catch { /* ignore */ }
+    pendingRef.current = null;
+    setPending(null);
+    setStep("credentials");
+    setDigits(EMPTY_DIGITS);
+    setAttempts(0);
+    setPassword("");
+    setErrorMsg("");
+  };
+
+  // Login Function (step 1: email + password)
   const handleLogin = async (e) => {
     e?.preventDefault();
 
@@ -129,67 +310,43 @@ function Login() {
         return;
       }
 
-      // 4. Check the unique 6-digit access code (admins are exempt)
-      if (role !== "admin") {
-        const storedCode = String(userData.accessCode || "");
+      // 4. Admins sign in with email + password only. Everyone else continues to
+      //    step 2, where they enter their 6-digit access code.
+      if (role === "admin") {
+        finishLogin({ user, userData, role, status });
+        return;
+      }
 
-        // Account made before codes existed: issue one now and show it once.
-        if (!storedCode) {
-          const newCode = await reserveUniqueAccessCode(user.uid);
-          await updateDoc(doc(db, "users", user.uid), { accessCode: newCode });
-          await signOut(auth);
-          setErrorMsg(
-            `Your account now has an access code: ${newCode}. Save it, then sign in again using this code.`
-          );
-          return;
-        }
+      let storedCode = String(userData.accessCode || "");
+      let startNotice = "Enter the 6-digit access code that was emailed to you when you registered.";
+      let startCooldown = 0;
 
-        if (!/^\d{6}$/.test(accessCode.trim())) {
-          await signOut(auth);
-          setErrorMsg("Please enter your 6-digit access code.");
-          return;
-        }
-
-        if (accessCode.trim() !== storedCode) {
-          await signOut(auth);
-          setErrorMsg("Incorrect access code.");
-          return;
+      // Account made before codes existed: issue one now and email it.
+      if (!storedCode) {
+        storedCode = await reserveUniqueAccessCode(user.uid);
+        await updateDoc(doc(db, "users", user.uid), { accessCode: storedCode });
+        startNotice = `We've given your account a new 6-digit access code and emailed it to ${cleanEmail}.`;
+        startCooldown = 30;
+        try {
+          await sendAccessCodeEmail({ email: cleanEmail, name: userData.name, code: storedCode });
+        } catch (err) {
+          console.error("Access code email failed:", err);
+          startNotice = `We couldn't email your new access code, so here it is: ${storedCode}. Enter it below.`;
+          startCooldown = 0;
         }
       }
 
-      // 5. Save logged in user (App.jsx reads this)
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: user.uid,
-          name: userData.name || user.displayName || "",
-          email: user.email,
-          role,
-          status,
-        })
-      );
-
-      // Notify App.jsx
-      window.dispatchEvent(new Event("authChange"));
-
-      // 6. Redirect based on role
-      switch (role) {
-        case "admin":
-          navigate("/admin/dashboard");
-          break;
-
-        case "veterinarian":
-        case "vet":
-          navigate("/vet/dashboard");
-          break;
-
-        case "shelter":
-          navigate("/shelter/dashboard");
-          break;
-
-        default:
-          navigate("/adopt");
-      }
+      // 5. Show the code screen. The person stays signed in with Firebase only
+      //    until the code is confirmed; nothing is saved for the app before then.
+      const waiting = { user, userData, role, status, storedCode, email: cleanEmail };
+      pendingRef.current = waiting;
+      setPending(waiting);
+      setDigits(EMPTY_DIGITS);
+      setAttempts(0);
+      setNotice(startNotice);
+      setCooldown(startCooldown);
+      setStep("code");
+      return;
     } catch (error) {
       console.error(error);
 
@@ -308,6 +465,40 @@ function Login() {
         .code-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
         .code-value { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.3em; margin: 4px 0; }
         .code-note { font-size: 0.8rem; }
+
+        .otp-row {
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+          margin: 6px 0 22px;
+        }
+        .auth-split .otp-box {
+          width: 100%;
+          min-width: 0;
+          padding: 14px 0;
+          text-align: center;
+          font-size: 1.5rem;
+          font-weight: 700;
+          border-radius: 14px;
+        }
+        .code-actions {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          margin-top: 18px;
+        }
+        .code-actions button {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #2e7d32;
+          cursor: pointer;
+          font-size: 0.85rem;
+          font-weight: 600;
+        }
+        .code-actions button:hover:not(:disabled) { text-decoration: underline; }
+        .code-actions button:disabled { color: #9aa89d; cursor: not-allowed; }
 
         .input-group { margin-bottom: 18px; }
 
@@ -449,23 +640,34 @@ function Login() {
             className="auth-split-form"
           >
             <motion.div variants={itemVariants}>
-              <h1>Welcome back</h1>
-              <p className="subtitle">Ready to find your new best friend?</p>
+              {step === "credentials" ? (
+                <>
+                  <h1>Welcome back</h1>
+                  <p className="subtitle">Ready to find your new best friend?</p>
+                </>
+              ) : (
+                <>
+                  <h1>Enter your code</h1>
+                  <p className="subtitle">One more step — your 6-digit access code.</p>
+                </>
+              )}
             </motion.div>
 
-            {justRegistered && !errorMsg && (
+            {step === "credentials" && justRegistered && !errorMsg && (
               <motion.div variants={itemVariants} className="info-banner">
                 {justRegistered.emailSent === false
                   ? "Account created, but we couldn't send the verification email. Sign in below and we'll send a new link."
                   : `Account created! We sent a verification link to ${justRegistered.email}. Click it, then sign in.`}
-                {justRegistered.accessCode && (
+                {justRegistered.codeEmailSent === false && justRegistered.accessCode ? (
                   <div className="code-box">
                     <div className="code-label">Your 6-digit access code</div>
                     <div className="code-value">{justRegistered.accessCode}</div>
                     <div className="code-note">
-                      Save it now — you'll need it every time you sign in.
+                      We couldn't email it, so save it now — you need it every time you sign in.
                     </div>
                   </div>
+                ) : (
+                  " We also emailed you a 6-digit access code — you'll need it every time you sign in."
                 )}
               </motion.div>
             )}
@@ -476,6 +678,7 @@ function Login() {
               </motion.div>
             )}
 
+            {step === "credentials" && (
             <form onSubmit={handleLogin} noValidate>
               <motion.div variants={itemVariants} className="input-group">
                 <label htmlFor="email">Email Address</label>
@@ -526,20 +729,6 @@ function Login() {
                 </div>
               </motion.div>
 
-              <motion.div variants={itemVariants} className="input-group">
-                <label htmlFor="accessCode">Access Code</label>
-                <input
-                  id="accessCode"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="6-digit code (not needed for admins)"
-                  value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                />
-              </motion.div>
-
               <motion.div variants={itemVariants} className="forgot-password">
                 <button type="button" onClick={handleForgotPassword}>
                   Forgot Password?
@@ -552,10 +741,62 @@ function Login() {
                 </button>
               </motion.div>
             </form>
+            )}
 
-            <motion.p variants={itemVariants} className="footer-text">
-              <Link to="/register">Create Account</Link>
-            </motion.p>
+            {step === "code" && pending && (
+              <>
+                {notice && (
+                  <motion.div variants={itemVariants} className="info-banner">
+                    {notice}
+                  </motion.div>
+                )}
+
+                <motion.div variants={itemVariants} className="otp-row" onPaste={handleDigitPaste}>
+                  {digits.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => (inputRefs.current[i] = el)}
+                      className="otp-box"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete={i === 0 ? "one-time-code" : "off"}
+                      aria-label={`Access code digit ${i + 1} of 6`}
+                      value={d}
+                      autoFocus={i === 0}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => handleDigitChange(i, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                    />
+                  ))}
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                  <button
+                    className="login-btn"
+                    type="button"
+                    disabled={!digits.every(Boolean)}
+                    onClick={() => verifyCode(digits.join(""))}
+                  >
+                    Verify &amp; Sign In
+                  </button>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="code-actions">
+                  <button type="button" onClick={resendCode} disabled={cooldown > 0}>
+                    {cooldown > 0 ? `Email my code again (${cooldown}s)` : "Email my code again"}
+                  </button>
+                  <button type="button" onClick={backToLogin}>
+                    ← Back to sign in
+                  </button>
+                </motion.div>
+              </>
+            )}
+
+            {step === "credentials" && (
+              <motion.p variants={itemVariants} className="footer-text">
+                <Link to="/register">Create Account</Link>
+              </motion.p>
+            )}
           </motion.div>
         </div>
       </div>
