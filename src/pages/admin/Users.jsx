@@ -148,74 +148,201 @@ export default function Users() {
   return (
     <div className="um-root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        .um-root { padding:32px 36px; font-family:'DM Sans',sans-serif; color:#1a1a1a; max-width:1100px; }
-        .um-header { margin-bottom:24px; }
-        .um-title { font-size:1.6rem; font-weight:800; color:#1a2e1a; margin-bottom:4px; }
-        .um-sub { font-size:0.88rem; color:#9aaa9a; }
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-        .um-filter-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+        .um-root {
+          --ink: #10261c;
+          --green: #1f6b3a;
+          --green-dark: #17532d;
+          --amber: #a8650d;
+          --red: #b3261e;
+          --mist: #eef4f0;
+          --line: #d3ded6;
+          --muted: #58695e;
+          padding: 32px 36px;
+          font-family: 'DM Sans', system-ui, sans-serif;
+          color: var(--ink);
+          max-width: 1100px;
+        }
+        .um-header { margin-bottom: 22px; }
+        .um-title {
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 2rem;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+          margin-bottom: 4px;
+        }
+        .um-sub { font-size: 0.95rem; color: var(--muted); max-width: 60ch; line-height: 1.5; }
+
+        /* One bar of counts that also filters the table */
+        .um-status {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          overflow: hidden;
+          background: #fff;
+          margin-bottom: 20px;
+        }
+        .um-status-btn {
+          text-align: left;
+          padding: 16px 20px 14px;
+          background: #fff;
+          border: none;
+          border-right: 1px solid var(--line);
+          border-bottom: 3px solid transparent;
+          cursor: pointer;
+          font: inherit;
+          transition: background 0.15s;
+        }
+        .um-status-btn:last-child { border-right: none; }
+        .um-status-btn:hover { background: var(--mist); }
+        .um-status-btn:focus-visible { outline: 3px solid var(--green); outline-offset: -3px; }
+        .um-status-count {
+          display: block;
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 1.9rem;
+          font-weight: 700;
+          line-height: 1.1;
+        }
+        .um-status-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-top: 2px; }
+        .um-status-btn.active { background: var(--mist); border-bottom-color: var(--ink); }
+        .um-status-active.active { border-bottom-color: var(--green); }
+        .um-status-active .um-status-count { color: var(--green); }
+        .um-status-suspended.active { border-bottom-color: var(--amber); }
+        .um-status-suspended .um-status-count { color: var(--amber); }
+        .um-status-banned.active { border-bottom-color: var(--red); }
+        .um-status-banned .um-status-count { color: var(--red); }
+
+        .um-filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
         .um-filter-btn {
-          padding:8px 16px; border-radius:99px; border:2px solid #e8f0e8;
-          background:white; font-size:0.76rem; font-weight:700; cursor:pointer;
-          font-family:'DM Sans',sans-serif; transition:all 0.18s; color:#557055;
+          padding: 7px 14px;
+          border-radius: 99px;
+          border: 1.5px solid var(--line);
+          background: #fff;
+          font: inherit;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          color: var(--muted);
+          transition: all 0.15s;
         }
-        .um-filter-btn:hover { border-color:#81c784; background:#f1f8f1; }
-        .um-filter-btn.active { background:#1a2e1a; color:white; border-color:#1a2e1a; }
+        .um-filter-btn:hover { border-color: var(--green); color: var(--green-dark); }
+        .um-filter-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .um-filter-btn:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
 
-        .um-toolbar { display:flex; align-items:center; gap:14px; margin-bottom:22px; flex-wrap:wrap; }
-        .um-search-wrap { position:relative; flex:1; min-width:200px; max-width:380px; }
-        .um-search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#9aaa9a; font-size:0.9rem; }
+        .um-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+        .um-search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
+        .um-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; }
         .um-search {
-          width:100%; padding:11px 14px 11px 38px; border:2px solid #e8f0e8;
-          border-radius:12px; font-size:0.88rem; font-family:'DM Sans',sans-serif;
-          outline:none; transition:border-color 0.2s;
+          width: 100%;
+          padding: 11px 14px 11px 38px;
+          border: 1.5px solid var(--line);
+          border-radius: 12px;
+          font: inherit;
+          font-size: 0.92rem;
+          background: #fff;
+          color: var(--ink);
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          box-sizing: border-box;
         }
-        .um-search:focus { border-color:#2e7d32; }
-        .um-count { font-size:0.8rem; font-weight:700; color:#9aaa9a; margin-left:auto; }
+        .um-search:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(31, 107, 58, 0.14); }
+        .um-count { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-left: auto; }
 
-        .um-table-wrap { border-radius:18px; border:1px solid #eef4ee; overflow:hidden; background:white; box-shadow:0 4px 16px rgba(0,0,0,0.04); }
-        table { width:100%; border-collapse:collapse; }
-        thead tr { background:#f8fcf8; }
-        th { padding:14px 16px; font-size:0.72rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#9aaa9a; text-align:left; border-bottom:1px solid #eef4ee; white-space:nowrap; }
-        td { padding:14px 16px; font-size:0.88rem; border-bottom:1px solid #f5f9f5; vertical-align:middle; }
-        tbody tr:last-child td { border-bottom:none; }
-        tbody tr:hover { background:#fafcfa; }
+        .um-table-wrap { border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; background: #fff; }
+        table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        thead tr { background: var(--mist); }
+        th {
+          padding: 12px 16px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--muted);
+          text-align: left;
+          border-bottom: 1px solid var(--line);
+          white-space: nowrap;
+        }
+        td { padding: 14px 16px; font-size: 0.92rem; border-bottom: 1px solid #e6eee8; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #f6faf7; }
 
-        .um-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#2e7d32,#1b5e20); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; flex-shrink:0; }
-        .um-name-cell { display:flex; align-items:center; gap:10px; }
-        .um-name { font-weight:700; color:#1a2e1a; }
-        .um-you-tag { font-size:0.68rem; font-weight:800; color:#9aaa9a; margin-left:6px; }
+        .um-name-cell { display: flex; align-items: center; gap: 12px; }
+        .um-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-weight: 700;
+          font-size: 0.95rem;
+          flex-shrink: 0;
+        }
+        .um-name { font-weight: 700; }
+        .um-you-tag { font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-left: 6px; }
+        .um-email { color: var(--muted); }
 
-        .um-pill { display:inline-block; font-size:0.74rem; font-weight:800; padding:4px 10px; border-radius:99px; white-space:nowrap; }
+        .um-role, .um-state { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+        .um-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-        .um-actions { display:flex; gap:8px; align-items:center; }
+        .um-actions { display: flex; gap: 8px; align-items: center; }
         .um-btn {
-          padding:7px 14px; border-radius:8px; border:none; font-size:0.78rem;
-          font-weight:700; cursor:pointer; transition:all 0.18s; font-family:'DM Sans',sans-serif;
-          white-space:nowrap;
+          padding: 6px 12px;
+          border-radius: 8px;
+          border: 1.5px solid currentColor;
+          background: transparent;
+          font: inherit;
+          font-size: 0.82rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+          white-space: nowrap;
         }
-        .um-btn:disabled { background:#f5f5f5; color:#bbb; cursor:not-allowed; }
-        .um-btn-suspend { background:#fff8e1; color:#f57f17; }
-        .um-btn-suspend:hover:not(:disabled) { background:#f57f17; color:white; }
-        .um-btn-ban { background:#ffebee; color:#c62828; }
-        .um-btn-ban:hover:not(:disabled) { background:#c62828; color:white; }
-        .um-btn-restore { background:#e8f5e9; color:#2e7d32; }
-        .um-btn-restore:hover:not(:disabled) { background:#2e7d32; color:white; }
+        .um-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+        .um-btn:disabled { color: #a3b0a7; cursor: not-allowed; }
+        .um-btn-suspend { color: var(--amber); }
+        .um-btn-suspend:hover:not(:disabled) { background: var(--amber); color: #fff; }
+        .um-btn-ban { color: var(--red); }
+        .um-btn-ban:hover:not(:disabled) { background: var(--red); color: #fff; }
+        .um-btn-restore { color: var(--green); }
+        .um-btn-restore:hover:not(:disabled) { background: var(--green); color: #fff; }
 
-        .um-empty { text-align:center; padding:60px 20px; color:#9aaa9a; }
-        .um-empty-icon { font-size:2.5rem; margin-bottom:10px; }
-        .um-loading { padding:40px; text-align:center; color:#9aaa9a; font-size:0.9rem; }
+        .um-empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+        .um-empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
+        .um-loading { padding: 40px; text-align: center; color: var(--muted); font-size: 0.95rem; }
 
-        @media(max-width:700px) {
-          .um-root { padding:20px; }
-          .um-table-wrap { overflow-x:auto; }
+        @media (max-width: 700px) {
+          .um-root { padding: 20px; }
+          .um-status { grid-template-columns: repeat(2, 1fr); }
+          .um-status-btn:nth-child(2) { border-right: none; }
+          .um-status-btn:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
         }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
       `}</style>
 
       <div className="um-header">
         <div className="um-title">User Management</div>
         <div className="um-sub">View and search users, and suspend, ban or reactivate accounts.</div>
+      </div>
+
+      <div className="um-status" role="group" aria-label="Filter by account status">
+        {STATUS_FILTERS.map((f) => {
+          const count = f === "all" ? users.length : users.filter((u) => getStatus(u) === f).length;
+          return (
+            <button
+              key={f}
+              type="button"
+              aria-pressed={statusFilter === f}
+              className={`um-status-btn um-status-${f}${statusFilter === f ? " active" : ""}`}
+              onClick={() => setStatusFilter(f)}
+            >
+              <span className="um-status-count">{count}</span>
+              <span className="um-status-label">{f === "all" ? "All accounts" : STATUS_STYLE[f].label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="um-filter-row">
@@ -228,20 +355,6 @@ export default function Users() {
             {f === "all"
               ? `All (${users.length})`
               : `${ROLE_STYLE[f]?.label} (${users.filter(u => (u.role || "adopter") === f).length})`}
-          </button>
-        ))}
-      </div>
-
-      <div className="um-filter-row">
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f}
-            className={`um-filter-btn ${statusFilter === f ? "active" : ""}`}
-            onClick={() => setStatusFilter(f)}
-          >
-            {f === "all"
-              ? "Any status"
-              : `${STATUS_STYLE[f].label} (${users.filter(u => getStatus(u) === f).length})`}
           </button>
         ))}
       </div>
@@ -292,7 +405,7 @@ export default function Users() {
                   <tr key={user.id}>
                     <td>
                       <div className="um-name-cell">
-                        <div className="um-avatar">{(user.name || "?").charAt(0).toUpperCase()}</div>
+                        <div className="um-avatar" style={{ background: rs.color }}>{(user.name || "?").charAt(0).toUpperCase()}</div>
                         <div>
                           <div className="um-name">
                             {user.name || "—"}
@@ -301,12 +414,12 @@ export default function Users() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ color: "#666" }}>{user.email || "—"}</td>
+                    <td className="um-email">{user.email || "—"}</td>
                     <td>
-                      <span className="um-pill" style={{ background: rs.bg, color: rs.color }}>{rs.label}</span>
+                      <span className="um-role"><span className="um-dot" style={{ background: rs.color }} />{rs.label}</span>
                     </td>
                     <td>
-                      <span className="um-pill" style={{ background: ss.bg, color: ss.color }}>{ss.label}</span>
+                      <span className="um-state" style={{ color: ss.color }}><span className="um-dot" style={{ background: ss.color }} />{ss.label}</span>
                     </td>
                     <td style={{ color: "#888", fontSize: "0.82rem" }}>{formatDate(user.createdAt)}</td>
                     <td>
