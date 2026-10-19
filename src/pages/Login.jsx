@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { FaPaw } from "react-icons/fa";
 
 // Firebase imports
 import { auth, db } from "../firebase";
@@ -51,6 +52,7 @@ function Login() {
   const [attempts, setAttempts] = useState(0);
   const [notice, setNotice] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const [shake, setShake] = useState(false);
   const inputRefs = useRef([]);
   const pendingRef = useRef(null);
   const doneRef = useRef(false);
@@ -143,6 +145,8 @@ function Login() {
     if (codeStr !== pending.storedCode) {
       const used = attempts + 1;
       setAttempts(used);
+      setShake(true);
+      setTimeout(() => setShake(false), 450);
       setDigits(EMPTY_DIGITS);
       inputRefs.current[0]?.focus();
 
@@ -334,6 +338,18 @@ function Login() {
           startNotice = `We couldn't email your new access code, so here it is: ${storedCode}. Enter it below.`;
           startCooldown = 0;
         }
+      } else {
+        // Existing account: email the code right after the password step,
+        // so it's waiting in their inbox when the code screen appears.
+        startNotice = `We emailed your 6-digit access code to ${cleanEmail}. It can take a minute to arrive, so check spam too.`;
+        startCooldown = 30;
+        try {
+          await sendAccessCodeEmail({ email: cleanEmail, name: userData.name, code: storedCode });
+        } catch (err) {
+          console.error("Access code email failed:", err);
+          startNotice = "We couldn't email your code just now. Choose “Email my code again” below to try once more.";
+          startCooldown = 0;
+        }
       }
 
       // 5. Show the code screen. The person stays signed in with Firebase only
@@ -381,29 +397,46 @@ function Login() {
   return (
     <div className="auth-split">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
         .auth-split {
+          --ink: #10261c;
+          --green: #1f6b3a;
+          --green-dark: #17532d;
+          --mist: #eef4f0;
+          --line: #d3ded6;
+          --muted: #58695e;
+          --brass: #b9852a;
           min-height: 100vh;
           display: flex;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-          color: #14201a;
-          background: #fff;
+          font-family: 'DM Sans', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+          color: var(--ink);
+          background: var(--mist);
         }
 
-        .auth-split-form-col {
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-        }
-        @media (min-width: 960px) {
-          .auth-split-form-col { width: 46%; }
-        }
+        .auth-split-form-col { width: 100%; display: flex; flex-direction: column; }
+        @media (min-width: 960px) { .auth-split-form-col { width: 46%; } }
 
         .auth-split-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
           padding: 28px 32px 0;
-          font-size: 1.15rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-          color: #1b5e20;
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 1.3rem;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          color: var(--green-dark);
+        }
+        .brand-mark {
+          display: grid;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          background: var(--green);
+          color: #fff;
+          font-size: 0.95rem;
         }
 
         .auth-split-center {
@@ -413,74 +446,238 @@ function Login() {
           justify-content: center;
           padding: 24px 32px 48px;
         }
-
-        .auth-split-form {
-          width: 100%;
-          max-width: 380px;
-        }
+        .auth-split-form { width: 100%; max-width: 400px; }
 
         .auth-split-form h1 {
-          font-size: 1.9rem;
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 2.35rem;
+          line-height: 1.05;
           font-weight: 700;
-          margin: 0 0 6px;
-          letter-spacing: -0.01em;
-          color: #0f2015;
+          letter-spacing: -0.02em;
+          margin: 0 0 10px;
+          color: var(--ink);
+        }
+        .auth-split-form .subtitle {
+          color: var(--muted);
+          margin: 0 0 26px;
+          font-size: 1rem;
+          line-height: 1.5;
+          max-width: 36ch;
         }
 
-        .auth-split-form .subtitle {
-          color: #5b6b60;
-          margin: 0 0 28px;
-          font-size: 0.95rem;
+        /* Step 1 of 2 / Step 2 of 2 */
+        .steps {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 0 0 20px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--muted);
         }
+        .step-bar { display: flex; gap: 6px; }
+        .step-seg { width: 28px; height: 4px; border-radius: 2px; background: var(--line); }
+        .step-seg.on { background: var(--green); }
 
         .error-banner {
           background: #fdecea;
-          color: #b3261e;
-          border: 1px solid #f5c6c2;
-          border-radius: 10px;
-          padding: 10px 14px;
-          font-size: 14px;
-          margin-bottom: 18px;
-        }
-
-        .info-banner {
-          background: #e8f5e9;
-          color: #1b5e20;
-          border: 1px solid #c8e6c9;
-          border-radius: 10px;
-          padding: 10px 14px;
-          font-size: 14px;
-          margin-bottom: 18px;
+          color: #9f1f17;
+          border: 1px solid #f3c2bd;
+          border-radius: 12px;
+          padding: 11px 14px;
+          font-size: 0.9rem;
           line-height: 1.4;
+          margin-bottom: 18px;
         }
-
+        .info-banner {
+          background: #e1efe5;
+          color: var(--green-dark);
+          border: 1px solid #c3dcc9;
+          border-radius: 12px;
+          padding: 11px 14px;
+          font-size: 0.9rem;
+          line-height: 1.45;
+          margin-bottom: 18px;
+        }
         .code-box {
           margin-top: 12px;
           padding: 12px;
           background: #fff;
-          border: 1px dashed #2e7d32;
-          border-radius: 10px;
+          border: 2px dashed var(--green);
+          border-radius: 14px;
           text-align: center;
         }
-        .code-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-        .code-value { font-size: 1.8rem; font-weight: 800; letter-spacing: 0.3em; margin: 4px 0; }
-        .code-note { font-size: 0.8rem; }
-
-        .otp-row {
-          display: flex;
-          gap: 10px;
-          justify-content: space-between;
-          margin: 6px 0 22px;
+        .code-label { font-size: 0.8rem; font-weight: 600; }
+        .code-value {
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 2rem;
+          font-weight: 700;
+          letter-spacing: 0.3em;
+          margin: 4px 0;
         }
+        .code-note { font-size: 0.82rem; }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group label {
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+          font-size: 0.88rem;
+          color: var(--ink);
+        }
+        .auth-split input,
+        .auth-split select {
+          width: 100%;
+          padding: 13px 16px;
+          border-radius: 12px;
+          border: 1.5px solid var(--line);
+          background: #fff;
+          box-sizing: border-box;
+          font: inherit;
+          font-size: 0.97rem;
+          color: var(--ink);
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .auth-split input:focus,
+        .auth-split select:focus {
+          border-color: var(--green);
+          box-shadow: 0 0 0 4px rgba(31, 107, 58, 0.14);
+        }
+        .auth-split input::placeholder { color: #8a9a90; }
+
+        .role-hint { font-size: 0.8rem; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+        .strength-container { margin-top: 8px; }
+        .strength-bar-bg { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+        .strength-bar-fill { height: 100%; transition: all 0.4s ease; }
+        .strength-text { font-size: 0.75rem; font-weight: 700; margin-top: 4px; text-align: right; }
+        .mismatch-text { font-size: 0.78rem; font-weight: 600; margin-top: 4px; color: #b3261e; }
+
+        .password-wrapper { position: relative; }
+        .password-wrapper input { padding-right: 48px; }
+        .password-toggle {
+          position: absolute;
+          top: 50%;
+          right: 8px;
+          transform: translateY(-50%);
+          width: 34px;
+          height: 34px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          background: none;
+          border: none;
+          border-radius: 8px;
+          color: var(--green);
+          padding: 0;
+        }
+        .password-toggle:hover { background: rgba(31, 107, 58, 0.08); }
+
+        .forgot-password { text-align: right; margin-top: -6px; margin-bottom: 20px; }
+        .forgot-password button {
+          background: none;
+          border: none;
+          padding: 0;
+          color: var(--green);
+          cursor: pointer;
+          font: inherit;
+          font-size: 0.88rem;
+          font-weight: 600;
+        }
+        .forgot-password button:hover { text-decoration: underline; }
+
+        .login-btn,
+        .reg-btn {
+          width: 100%;
+          padding: 14px;
+          background: var(--green);
+          color: #fff;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          font: inherit;
+          font-size: 0.98rem;
+          font-weight: 700;
+          transition: background 0.15s, transform 0.1s;
+        }
+        .reg-btn { margin-top: 6px; }
+        .login-btn:hover:not(:disabled),
+        .reg-btn:hover:not(:disabled) { background: var(--green-dark); }
+        .login-btn:active:not(:disabled),
+        .reg-btn:active:not(:disabled) { transform: translateY(1px); }
+        .login-btn:disabled,
+        .reg-btn:disabled { background: #a9c4b0; cursor: not-allowed; }
+        .login-btn:focus-visible,
+        .reg-btn:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+        .footer-text, .footer-link { margin-top: 24px; font-size: 0.93rem; color: var(--muted); }
+        .footer-text a, .footer-link a { color: var(--green-dark); font-weight: 700; text-decoration: none; }
+        .footer-text a:hover, .footer-link a:hover { text-decoration: underline; }
+
+        /* The access code, shown as a pet ID tag */
+        .tag {
+          position: relative;
+          background: #fff;
+          border: 2px solid var(--ink);
+          border-radius: 30px;
+          padding: 46px 22px 18px;
+          margin: 4px 0 22px;
+        }
+        .tag-hole {
+          position: absolute;
+          top: 16px;
+          left: 50%;
+          width: 16px;
+          height: 16px;
+          margin-left: -8px;
+          border-radius: 50%;
+          background: var(--mist);
+          border: 2px solid var(--ink);
+        }
+        .tag-title {
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--muted);
+          text-align: center;
+          margin-bottom: 8px;
+        }
+        .otp-row { display: flex; gap: 10px; justify-content: space-between; }
         .auth-split .otp-box {
           width: 100%;
           min-width: 0;
-          padding: 14px 0;
+          padding: 8px 0 6px;
           text-align: center;
-          font-size: 1.5rem;
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 2rem;
           font-weight: 700;
-          border-radius: 14px;
+          color: var(--green-dark);
+          background: transparent;
+          border: none;
+          border-bottom: 3px solid var(--line);
+          border-radius: 0;
+          box-shadow: none;
         }
+        .auth-split .otp-box:focus { border-bottom-color: var(--brass); box-shadow: none; }
+        .auth-split .otp-box.filled { border-bottom-color: var(--green); }
+        .tag-foot {
+          margin-top: 16px;
+          padding-top: 12px;
+          border-top: 1px dashed var(--line);
+          font-size: 0.85rem;
+          color: var(--muted);
+          text-align: center;
+        }
+        .tag.shake { animation: tag-shake 0.45s; }
+        @keyframes tag-shake {
+          10%, 90% { transform: translateX(-2px); }
+          20%, 80% { transform: translateX(4px); }
+          30%, 50%, 70% { transform: translateX(-6px); }
+          40%, 60% { transform: translateX(6px); }
+        }
+        @media (prefers-reduced-motion: reduce) { .tag.shake { animation: none; } }
+
         .code-actions {
           display: flex;
           flex-direction: column;
@@ -492,115 +689,18 @@ function Login() {
           background: none;
           border: none;
           padding: 0;
-          color: #2e7d32;
+          color: var(--green-dark);
           cursor: pointer;
-          font-size: 0.85rem;
+          font: inherit;
+          font-size: 0.9rem;
           font-weight: 600;
         }
         .code-actions button:hover:not(:disabled) { text-decoration: underline; }
-        .code-actions button:disabled { color: #9aa89d; cursor: not-allowed; }
+        .code-actions button:disabled { color: #8a9a90; cursor: not-allowed; }
 
-        .input-group { margin-bottom: 18px; }
-
-        .input-group label {
-          display: block;
-          margin-bottom: 6px;
-          font-weight: 600;
-          font-size: 0.85rem;
-          color: #1b5e20;
-        }
-
-        .auth-split input {
-          width: 100%;
-          padding: 13px 46px 13px 15px;
-          border-radius: 999px;
-          border: 1.5px solid #dfe6e1;
-          box-sizing: border-box;
-          font-size: 0.95rem;
-          outline: none;
-          transition: border-color 0.15s;
-        }
-
-        .auth-split input:focus {
-          border-color: #2e7d32;
-        }
-
-        .password-wrapper { position: relative; }
-
-        .password-toggle {
-          position: absolute;
-          top: 50%;
-          right: 8px;
-          transform: translateY(-50%);
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          background: none;
-          border: none;
-          border-radius: 999px;
-          color: #2e7d32;
-          padding: 0;
-        }
-
-        .password-toggle:hover { background: rgba(46,125,50,0.08); }
-
-        .forgot-password {
-          text-align: right;
-          margin-top: -8px;
-          margin-bottom: 20px;
-        }
-
-        .forgot-password button {
-          background: none;
-          border: none;
-          padding: 0;
-          color: #2e7d32;
-          cursor: pointer;
-          font-size: 0.85rem;
-          font-weight: 600;
-        }
-
-        .forgot-password button:hover { text-decoration: underline; }
-
-        .login-btn {
-          width: 100%;
-          padding: 15px;
-          background: #1b5e20;
-          color: white;
-          border: none;
-          border-radius: 999px;
-          cursor: pointer;
-          font-size: 0.95rem;
-          font-weight: 600;
-          transition: opacity 0.15s;
-        }
-
-        .login-btn:hover:not(:disabled) { opacity: 0.9; }
-        .login-btn:disabled { background: #a8c8a9; cursor: not-allowed; }
-
-        .footer-text {
-          margin-top: 24px;
-          font-size: 0.9rem;
-          color: #5b6b60;
-        }
-
-        .footer-text a { color: #1b5e20; font-weight: 600; text-decoration: none; }
-        .footer-text a:hover { text-decoration: underline; }
-
-        .auth-split-image-col {
-          display: none;
-          position: relative;
-          overflow: hidden;
-        }
+        .auth-split-image-col { display: none; position: relative; overflow: hidden; }
         @media (min-width: 960px) {
-          .auth-split-image-col {
-            display: block;
-            width: 54%;
-            padding: 16px 16px 16px 0;
-          }
+          .auth-split-image-col { display: block; width: 54%; padding: 16px 16px 16px 0; }
         }
         .auth-split-image-frame {
           position: relative;
@@ -609,28 +709,42 @@ function Login() {
           border-radius: 28px;
           overflow: hidden;
         }
-        .auth-split-image-frame img {
-          height: 100%;
-          width: 100%;
-          object-fit: cover;
+        .auth-split-image-frame img { height: 100%; width: 100%; object-fit: cover; display: block; }
+        .auth-split-image-frame::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(16, 38, 28, 0.55), rgba(16, 38, 28, 0) 45%);
+          pointer-events: none;
         }
         .auth-split-image-caption {
           position: absolute;
+          z-index: 1;
           left: 24px;
           right: 24px;
           bottom: 24px;
           color: #fff;
-          background: rgba(15, 32, 21, 0.45);
-          backdrop-filter: blur(6px);
-          padding: 16px 20px;
-          border-radius: 16px;
-          font-size: 0.95rem;
-          line-height: 1.4;
+          font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+          font-size: 1.25rem;
+          font-weight: 600;
+          line-height: 1.3;
+          max-width: 28ch;
+        }
+
+        @media (max-width: 480px) {
+          .auth-split-center { padding: 20px 20px 40px; }
+          .auth-split-brand { padding: 22px 20px 0; }
+          .auth-split-form h1 { font-size: 2rem; }
+          .otp-row { gap: 6px; }
+          .auth-split .otp-box { font-size: 1.7rem; }
         }
       `}</style>
 
       <div className="auth-split-form-col">
-        <div className="auth-split-brand">VETADOPT</div>
+        <div className="auth-split-brand">
+          <span className="brand-mark" aria-hidden="true"><FaPaw /></span>
+          VetAdopt
+        </div>
 
         <div className="auth-split-center">
           <motion.div
@@ -640,6 +754,13 @@ function Login() {
             className="auth-split-form"
           >
             <motion.div variants={itemVariants}>
+              <div className="steps">
+                <span className="step-bar" aria-hidden="true">
+                  <span className="step-seg on" />
+                  <span className={`step-seg${step === "code" ? " on" : ""}`} />
+                </span>
+                <span>{step === "credentials" ? "Step 1 of 2" : "Step 2 of 2"}</span>
+              </div>
               {step === "credentials" ? (
                 <>
                   <h1>Welcome back</h1>
@@ -648,7 +769,7 @@ function Login() {
               ) : (
                 <>
                   <h1>Enter your code</h1>
-                  <p className="subtitle">One more step — your 6-digit access code.</p>
+                  <p className="subtitle">One more step to sign in. Enter the code we just emailed you.</p>
                 </>
               )}
             </motion.div>
@@ -663,11 +784,11 @@ function Login() {
                     <div className="code-label">Your 6-digit access code</div>
                     <div className="code-value">{justRegistered.accessCode}</div>
                     <div className="code-note">
-                      We couldn't email it, so save it now — you need it every time you sign in.
+                      We couldn't email it, so save it now — you'll enter it after your password.
                     </div>
                   </div>
                 ) : (
-                  " We also emailed you a 6-digit access code — you'll need it every time you sign in."
+                  " We also emailed you a 6-digit access code. After you sign in with your password, you'll enter it on the next screen."
                 )}
               </motion.div>
             )}
@@ -751,12 +872,15 @@ function Login() {
                   </motion.div>
                 )}
 
-                <motion.div variants={itemVariants} className="otp-row" onPaste={handleDigitPaste}>
+                <motion.div variants={itemVariants} className={`tag${shake ? " shake" : ""}`}>
+                  <div className="tag-hole" aria-hidden="true" />
+                  <div className="tag-title">Your access code</div>
+                  <div className="otp-row" onPaste={handleDigitPaste}>
                   {digits.map((d, i) => (
                     <input
                       key={i}
                       ref={(el) => (inputRefs.current[i] = el)}
-                      className="otp-box"
+                      className={`otp-box${d ? " filled" : ""}`}
                       type="text"
                       inputMode="numeric"
                       autoComplete={i === 0 ? "one-time-code" : "off"}
@@ -768,6 +892,8 @@ function Login() {
                       onKeyDown={(e) => handleDigitKeyDown(i, e)}
                     />
                   ))}
+                  </div>
+                  <div className="tag-foot">Issued to {pending.userData.name || pending.email}</div>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
