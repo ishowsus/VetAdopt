@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, cloneElement } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { db, auth } from "../firebase";
@@ -11,6 +11,8 @@ import {
   where,
   serverTimestamp,
   writeBatch,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import {
   signInWithEmailAndPassword,
@@ -21,7 +23,8 @@ import {
 
 const PAGE_SIZE = 9;
 
-const TYPE_ICONS = { All: "🐾", Dog: "🐶", Cat: "🐱", Rabbit: "🐰", Parrot: "🦜", Bird: "🦜" };
+const TYPE_ICONS = { All: "🐾", Dog: "🐶", Cat: "🐱", Rabbit: "🐰", Bird: "🦜" };
+const validType = (t) => { const n = t === "Parrot" ? "Bird" : t; return n && TYPE_ICONS[n] ? n : "All"; };
 const BADGE_COLORS = {
   Available: { bg: "#e8f5e9", text: "#2e7d32" },
   Pending: { bg: "#fff8e1", text: "#f57f17" },
@@ -90,6 +93,8 @@ const ageBucket = (pet) => {
 
 const EmbeddedStyles = () => (
   <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&display=swap');
+    .adopt-root { --mist: #e7f0ea; --mist-line: #b9d3c3; --head: 'Bricolage Grotesque', -apple-system, 'Segoe UI', sans-serif; }
     .adopt-root {
       max-width: 1200px;
       margin: 0 auto;
@@ -266,6 +271,37 @@ const EmbeddedStyles = () => (
     .ad-switch span { color: #15803d; font-weight: 600; cursor: pointer; text-decoration: underline; }
     .ad-error { color: #dc2626; background: #fef2f2; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; margin-top: 10px; }
     .ad-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #64748b; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; }
+
+    .ad-hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: center; text-align: left; padding: 28px; background: var(--mist); border: 1px solid var(--mist-line); border-radius: 20px; }
+    .ad-hero h1, .ad-category-title, .pc2-name, .pc2-open-name { font-family: var(--head); }
+    .ad-hero h1 { font-size: 2.4rem; line-height: 1.1; margin: 0 0 8px; color: #14532d; }
+    .ad-hero p { margin: 0 0 18px; }
+    .ad-hero-img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; }
+    .ad-search { background: #fff; }
+    .sidebar-filter.active, .sidebar-filter:hover { background: var(--mist); border-color: var(--mist-line); }
+    .ad-sort { margin-left: auto; min-height: 42px; }
+    .pc2-card { cursor: pointer; }
+    .pc2-card:focus-within { outline: 3px solid #16a34a; outline-offset: 2px; }
+    .pc2-info { pointer-events: none; }
+    .pc2-name-btn { all: unset; cursor: pointer; pointer-events: auto; }
+    .pc2-name-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    .pc2-heart { position: absolute; top: 10px; left: 10px; z-index: 3; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,0.92); cursor: pointer; font-size: 1.1rem; }
+    .pc2-meta { margin: 4px 0 0; font-size: 0.8rem; color: rgba(255,255,255,0.88); }
+    .pc2-hint { display: none; }
+    .ad-chips, .ad-filter-btn, .ad-sheet-head, .ad-sheet-bg { display: none; }
+    @media (max-width: 850px) {
+      .pc2-hint { display: block; }
+      .ad-chips { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 4px; }
+      .ad-chip { flex: none; padding: 8px 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; cursor: pointer; }
+      .ad-chip.active { background: var(--mist); border-color: var(--mist-line); }
+      .ad-filter-btn { display: inline-block; padding: 0 16px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; font-weight: 600; cursor: pointer; }
+      .ad-sidebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990; max-height: 80vh; overflow-y: auto; background: #fff; padding: 16px; border-radius: 20px 20px 0 0; transform: translateY(105%); visibility: hidden; transition: transform 0.25s, visibility 0.25s; }
+      .ad-sidebar.open { transform: none; visibility: visible; }
+      .ad-sheet-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; margin-bottom: 12px; }
+      .ad-sheet-bg { display: block; position: fixed; inset: 0; z-index: 9989; background: rgba(15,23,42,0.5); }
+      .ad-species-group { display: none; }
+    }
+    @media (max-width: 700px) { .ad-hero { grid-template-columns: 1fr; padding: 18px; } .ad-hero-img { display: none; } }
   `}</style>
 );
 
@@ -336,33 +372,42 @@ function useFocusTrap(ref, active) {
 
 /* ---------- Collapsed pet card ---------- */
 
-function PetCard({ pet, onExpand, index }) {
+function PetCard({ pet, onExpand, index, saved, onToggleSave }) {
   const img = usePetImage(pet);
   const badge = pet.badge || pet.status || "Available";
+  const meta = [pet.age, pet.gender, pet.city || pet.location].filter(Boolean).join(" · ");
 
   return (
-    <motion.button
-      type="button"
+    <motion.article
       className="pc2-card"
       onClick={() => onExpand(pet)}
-      aria-label={`View details for ${pet.name}`}
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.3, delay: (index % 9) * 0.04, ease: "easeOut" }}
-      whileHover={{ scale: 1.02 }}
     >
-      <img className="pc2-img" src={img.src} alt={pet.name || "Pet"} onError={img.onError} />
+      <img className="pc2-img" src={img.src} alt="" onError={img.onError} />
       <div className="pc2-shade" />
       <span className="pc2-badge" style={badgeStyle(badge)}>{badge}</span>
+      <button
+        type="button"
+        className="pc2-heart"
+        style={{ color: saved ? "#dc2626" : "#334155" }}
+        aria-pressed={saved}
+        aria-label={saved ? `Remove ${pet.name} from saved pets` : `Save ${pet.name}`}
+        onClick={(e) => { e.stopPropagation(); onToggleSave(pet); }}
+      >
+        {saved ? "♥" : "♡"}
+      </button>
       <div className="pc2-info">
-        <p className="pc2-sub">
-          {[pet.breed || pet.type, pet.age].filter(Boolean).join(", ")}
-        </p>
-        <h3 className="pc2-name">{pet.name}</h3>
+        <p className="pc2-sub">{pet.breed || pet.type}</p>
+        <h3 className="pc2-name">
+          <button type="button" className="pc2-name-btn" aria-haspopup="dialog">{pet.name}</button>
+        </h3>
+        {meta && <p className="pc2-meta">{meta}</p>}
         <p className="pc2-hint">Tap for details</p>
       </div>
-    </motion.button>
+    </motion.article>
   );
 }
 
@@ -385,6 +430,11 @@ function ExpandedPetPanel({ pet, user, applied, authVersion, onClose, onRequireA
   const img = usePetImage(pet);
   const badge = pet.badge || pet.status || "Available";
   const panelRef = useRef(null);
+
+  // Prefill the name from the account profile.
+  useEffect(() => {
+    if (user?.displayName) setContact((c) => (c.fullName ? c : { ...c, fullName: user.displayName }));
+  }, [user]);
 
   useLockBody(true);
   useEscape(onClose);
@@ -436,8 +486,8 @@ function ExpandedPetPanel({ pet, user, applied, authVersion, onClose, onRequireA
 
   const field = (key, label, input) => (
     <div className={`ad-field ${errors[key] ? "bad" : ""}`}>
-      <label className="ad-label">{label}</label>
-      {input}
+      <label className="ad-label" htmlFor={`f-${key}`}>{label}</label>
+      {cloneElement(input, { id: `f-${key}` })}
       <p className="ad-err">{errors[key]}</p>
     </div>
   );
@@ -678,8 +728,9 @@ function AuthModal({ onClose, onSuccess }) {
 
         {mode === "register" && (
           <>
-            <label className="ad-label">Full name</label>
+            <label className="ad-label" htmlFor="au-name">Full name</label>
             <input
+              id="au-name"
               className="ad-input"
               placeholder="Juan Dela Cruz"
               value={authData.name}
@@ -689,8 +740,9 @@ function AuthModal({ onClose, onSuccess }) {
           </>
         )}
 
-        <label className="ad-label">Email</label>
+        <label className="ad-label" htmlFor="au-email">Email</label>
         <input
+          id="au-email"
           className="ad-input"
           type="email"
           placeholder="you@example.com"
@@ -699,8 +751,9 @@ function AuthModal({ onClose, onSuccess }) {
           style={{ marginBottom: 12 }}
         />
 
-        <label className="ad-label">Password</label>
+        <label className="ad-label" htmlFor="au-pass">Password</label>
         <input
+          id="au-pass"
           className="ad-input"
           type="password"
           placeholder={mode === "register" ? "Minimum 6 characters" : "Enter password"}
@@ -751,20 +804,37 @@ export default function Adopt() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState(() => {
-    const urlType = searchParams.get("type");
-    return urlType && TYPE_ICONS[urlType] ? urlType : "All";
-  });
-  const [sort, setSort] = useState("default");
-  const [ageFilter, setAgeFilter] = useState("All");
-  const [genderFilter, setGenderFilter] = useState("All");
+  // Filters live in the URL so any view can be shared.
+  const setParam = (key, val, def = "") =>
+    setSearchParams(
+      (prev) => {
+        const n = new URLSearchParams(prev);
+        if (!val || val === def) n.delete(key);
+        else n.set(key, val);
+        return n;
+      },
+      { replace: true }
+    );
+  const search = searchParams.get("q") || "";
+  const filter = validType(searchParams.get("type"));
+  const sort = searchParams.get("sort") || "newest";
+  const ageFilter = searchParams.get("age") || "All";
+  const genderFilter = searchParams.get("gender") || "All";
+  const savedOnly = searchParams.get("saved") === "1";
+  const setSearch = (v) => setParam("q", v);
+  const setSort = (v) => setParam("sort", v, "newest");
+  const setAgeFilter = (v) => setParam("age", v, "All");
+  const setGenderFilter = (v) => setParam("gender", v, "All");
+
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [savedIds, setSavedIds] = useState(() => new Set());
 
   const [user, setUser] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [authVersion, setAuthVersion] = useState(0); // bumped on each successful auth
 
   const [expandedPet, setExpandedPet] = useState(null);
+  const heroImg = usePetImage(pets[0]);
   const [appliedIds, setAppliedIds] = useState(() => new Set());
 
   // Real-time listener, filtered to a single field ("status"), so it never
@@ -786,6 +856,7 @@ export default function Adopt() {
             ? rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase()
             : "Other";
           if (/^(dog|cat|rabbit|bird|parrot)s$/i.test(cleanType)) cleanType = cleanType.slice(0, -1);
+          if (cleanType === "Parrot") cleanType = "Bird";
           return { id: d.id, ...data, type: cleanType };
         });
         setPets(fetched);
@@ -805,7 +876,7 @@ export default function Adopt() {
   // longer makes sense, so start over at one page's worth of results.
   useEffect(() => {
     setVisibleLimit(PAGE_SIZE);
-  }, [search, filter, ageFilter, genderFilter, sort]);
+  }, [search, filter, ageFilter, genderFilter, sort, savedOnly]);
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
@@ -826,21 +897,27 @@ export default function Adopt() {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Keep the species filter in sync with ?type=, including navbar link clicks
-  // while already on this page.
-  useEffect(() => {
-    const urlType = searchParams.get("type");
-    setFilter(urlType && TYPE_ICONS[urlType] ? urlType : "All");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  const selectFilter = (cat) => setParam("type", cat, "All");
 
-  const selectFilter = (cat) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (cat === "All") next.delete("type");
-      else next.set("type", cat);
-      return next;
-    });
+  // Saved pets: users/{uid}/savedPets/{petId}
+  useEffect(() => {
+    if (!user) { setSavedIds(new Set()); return; }
+    return onSnapshot(
+      collection(db, "users", user.uid, "savedPets"),
+      (snap) => setSavedIds(new Set(snap.docs.map((d) => d.id))),
+      (err) => console.error("Error loading saved pets:", err)
+    );
+  }, [user]);
+
+  const toggleSave = async (pet) => {
+    if (!user) return setAuthOpen(true);
+    const ref = doc(db, "users", user.uid, "savedPets", pet.id);
+    try {
+      if (savedIds.has(pet.id)) await deleteDoc(ref);
+      else await setDoc(ref, { savedAt: serverTimestamp() });
+    } catch (err) {
+      console.error("Error updating saved pets:", err);
+    }
   };
 
   const filteredPets = useMemo(() => {
@@ -861,9 +938,10 @@ export default function Adopt() {
         ageFilter === "All" ||
         ageBucket(p) === ageFilter;
 
-      return matchesSearch && matchesFilter && matchesGender && matchesAge;
+      const matchesSaved = !savedOnly || savedIds.has(p.id);
+      return matchesSearch && matchesFilter && matchesGender && matchesAge && matchesSaved;
     });
-  }, [pets, search, filter, ageFilter, genderFilter]);
+  }, [pets, search, filter, ageFilter, genderFilter, savedOnly, savedIds]);
 
   const sortedPets = useMemo(() => {
     const result = [...filteredPets];
@@ -896,7 +974,7 @@ export default function Adopt() {
       if (pet.type === "Dog") categories.Dog.push(pet);
       else if (pet.type === "Cat") categories.Cat.push(pet);
       else if (pet.type === "Rabbit") categories.Rabbit.push(pet);
-      else if (pet.type === "Parrot" || pet.type === "Bird") categories.Bird.push(pet);
+      else if (pet.type === "Bird") categories.Bird.push(pet);
       else categories.Other.push(pet);
     });
     return categories;
@@ -972,38 +1050,42 @@ export default function Adopt() {
     setAppliedIds((prev) => new Set(prev).add(pet.id));
   };
 
-  const resetFilters = () => {
-    setSearch("");
-    selectFilter("All");
-    setAgeFilter("All");
-    setGenderFilter("All");
-    setSort("default");
-  };
+  const resetFilters = () => setSearchParams({}, { replace: true });
 
   return (
     <div className="adopt-root">
       <EmbeddedStyles />
 
       <section className="ad-hero">
-        <h1>Find Your <em>Forever</em> Companion</h1>
-        <p>Every pet listed here is rescued, microchipped, fully vaccinated, and ready for adoption.</p>
-        <div className="ad-hero-stats">
-          <div className="ad-stat">
-            <div className="ad-stat-num">{pets.length}</div>
-            <div className="ad-stat-label">Available Pets</div>
-          </div>
-          <div className="ad-stat">
-            <div className="ad-stat-num">100%</div>
-            <div className="ad-stat-label">Rescued</div>
+        <div>
+          <h1>Find a pet who needs a home</h1>
+          <p>Browse pets posted by shelters and owners on this platform.</p>
+          <div className="ad-search-wrap">
+            <span className="ad-search-icon" aria-hidden="true">🔍</span>
+            <input
+              className="ad-search"
+              type="search"
+              aria-label="Search pets"
+              placeholder="Search by name, breed or tag"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
+        <img className="ad-hero-img" src={heroImg.src} alt="" onError={heroImg.onError} />
       </section>
 
       <div className="ad-layout">
-        <aside className="ad-sidebar">
+        {filtersOpen && <div className="ad-sheet-bg" onClick={() => setFiltersOpen(false)} />}
+        <aside className={`ad-sidebar ${filtersOpen ? "open" : ""}`}>
+          <div className="ad-sheet-head">
+            <span>Filters</span>
+            <button type="button" className="ad-chip" onClick={() => setFiltersOpen(false)}>Show results</button>
+          </div>
           <div className="side-card">
             <h3>🐾 Find your perfect pet</h3>
 
+            <div className="ad-species-group">
             <h4>Species</h4>
             {Object.keys(TYPE_ICONS).map((cat) => (
               <button
@@ -1014,11 +1096,27 @@ export default function Adopt() {
                 <span>{TYPE_ICONS[cat]} {cat === "All" ? "All pets" : `${cat}s`}</span>
                 {cat !== "All" && (
                   <span className="sidebar-count">
-                    {cat === "Parrot" ? 0 : typeCounts[cat] ?? 0}
+                    {typeCounts[cat] ?? 0}
                   </span>
                 )}
               </button>
             ))}
+
+            </div>
+
+            {user && (
+              <>
+                <h4>Saved</h4>
+                <button
+                  type="button"
+                  className={`sidebar-filter ${savedOnly ? "active" : ""}`}
+                  onClick={() => setParam("saved", savedOnly ? "" : "1")}
+                >
+                  <span>♥ Saved pets</span>
+                  <span className="sidebar-count">{savedIds.size}</span>
+                </button>
+              </>
+            )}
 
             <h4>Age</h4>
             {["All", "Baby", "Young", "Adult", "Senior"].map((age) => (
@@ -1047,30 +1145,29 @@ export default function Adopt() {
             </button>
           </div>
 
-          <div className="side-card">
-            <h3>📊 Available pets</h3>
-            {(["Dog", "Cat", "Rabbit", "Bird", "Other"]).map((t) => (
-              <p key={t} style={{ margin: "6px 0", fontSize: "0.9rem" }}>
-                {TYPE_ICONS[t] || "🐾"} {t === "Bird" ? "Birds" : `${t}s`}: {typeCounts[t]}
-              </p>
-            ))}
-          </div>
         </aside>
 
         <main className="ad-main">
-          <div className="ad-controls">
-            <div className="ad-search-wrap">
-              <span className="ad-search-icon">🔍</span>
-              <input
-                className="ad-search"
-                placeholder="Search pets..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+          <div className="ad-chips" role="group" aria-label="Species">
+            {Object.keys(TYPE_ICONS).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`ad-chip ${filter === cat ? "active" : ""}`}
+                onClick={() => selectFilter(cat)}
+              >
+                {TYPE_ICONS[cat]} {cat === "All" ? "All" : `${cat}s`}
+              </button>
+            ))}
+          </div>
 
-            <select className="ad-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-              <option value="default">Sort by</option>
+          <div className="ad-controls">
+            <button type="button" className="ad-filter-btn" onClick={() => setFiltersOpen(true)}>
+              Filters
+            </button>
+
+            <select className="ad-sort" aria-label="Sort pets" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="newest">Newest</option>
               <option value="name">Name (A-Z)</option>
               <option value="youngest">Youngest</option>
               <option value="oldest">Oldest</option>
@@ -1101,7 +1198,14 @@ export default function Adopt() {
                   </h2>
                   <div className="ad-grid">
                     {petGroup.map((pet, i) => (
-                      <PetCard key={pet.id} pet={pet} index={i} onExpand={setExpandedPet} />
+                      <PetCard
+                        key={pet.id}
+                        pet={pet}
+                        index={i}
+                        onExpand={setExpandedPet}
+                        saved={savedIds.has(pet.id)}
+                        onToggleSave={toggleSave}
+                      />
                     ))}
                   </div>
                 </section>
