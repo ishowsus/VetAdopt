@@ -1,8 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { db, auth } from "../../firebase";
+import { db, auth, storage } from "../../firebase";
 import { supabase } from "../../supabase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes } from "firebase/storage";
 import { Loader2, Upload } from "lucide-react";
+import VerificationPanel, { VerificationBadge, useVerification } from "../../components/shared/VerificationPanel"; // adjust path
+import PasswordPanel from "../../components/shared/PasswordPanel"; // adjust path
+
+const TABS = [
+  { key: "profile", label: "Profile" },
+  { key: "verification", label: "Verification" },
+  { key: "security", label: "Security" },
+];
+
+// Verification papers go to Firebase Storage so Storage rules can limit reads to the owner and admins.
+const uploadVerificationDoc = async (file, uid) => {
+  const ext = file.name.split(".").pop();
+  const r = ref(storage, `verificationDocs/${uid}/registration_${Date.now()}.${ext}`);
+  await uploadBytes(r, file);
+  return r.fullPath;
+};
 
 export default function ShelterProfile() {
   const [profile, setProfile] = useState({
@@ -16,6 +33,8 @@ export default function ShelterProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [tab, setTab] = useState("profile");
+  const { data: verification } = useVerification(auth.currentUser?.uid);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -182,9 +201,33 @@ export default function ShelterProfile() {
 
   return (
     <div style={{ maxWidth: "700px", margin: "0 auto", padding: "2rem" }}>
-      <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem" }}>
-        Shelter Profile
-      </h2>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", margin: 0 }}>Shelter Profile</h2>
+        <VerificationBadge status={verification?.status || "unverified"} />
+      </div>
+
+      <div role="tablist" style={{ display: "flex", gap: "0.25rem", borderBottom: "1px solid #e5e7eb", marginBottom: "1.5rem" }}>
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            onClick={() => setTab(t.key)}
+            style={{
+              padding: "0.6rem 1rem",
+              background: "none",
+              border: "none",
+              borderBottom: `3px solid ${tab === t.key ? "#10b981" : "transparent"}`,
+              color: tab === t.key ? "#047857" : "#6b7280",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       {notice && (
         <div style={{ backgroundColor: "#d1fae5", color: "#065f46", padding: "0.75rem", borderRadius: "6px", marginBottom: "1rem" }}>
@@ -198,6 +241,7 @@ export default function ShelterProfile() {
         </div>
       )}
 
+      {tab === "profile" && (
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
           <div
@@ -320,6 +364,18 @@ export default function ShelterProfile() {
           Save Changes
         </button>
       </form>
+      )}
+
+      {tab === "verification" && (
+        <VerificationPanel
+          role="shelter"
+          documentLabel="Shelter registration"
+          numberLabel="Registration number"
+          uploadFile={uploadVerificationDoc}
+        />
+      )}
+
+      {tab === "security" && <PasswordPanel />}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { db, auth } from "../firebase";
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -155,7 +156,7 @@ const EmbeddedStyles = () => (
       border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px;
     }
     .ad-category-count { font-size: 0.9rem; font-weight: 500; color: #64748b; }
-    .ad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px; }
+    .ad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min, 250px), 1fr)); gap: 24px; }
 
     /* ---------- Skeleton loading ---------- */
     .sk-card { border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
@@ -219,7 +220,25 @@ const EmbeddedStyles = () => (
     .pc2-details dt { font-size: 0.75rem; color: #64748b; margin-bottom: 2px; }
     .pc2-details dd { margin: 0; font-size: 0.95rem; font-weight: 600; color: #0f172a; }
     .pc2-desc { font-size: 0.925rem; line-height: 1.55; color: #475569; margin: 0 0 12px; }
-    .pc2-poster { font-size: 0.85rem; font-weight: 600; color: #15803d; margin: 0 0 14px; }
+    .pc2-poster { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+    .pc2-poster-label { font-size: 0.75rem; font-weight: 500; color: #64748b; }
+    .pc2-poster .pc2-by { margin-bottom: 0; }
+    .pc2-poster .pc2-by-name { color: #0f172a; font-size: 0.9rem; }
+    .pc2-poster .pc2-by-img { border-color: #e2e8f0; }
+
+    /* ---------- Poster chip ---------- */
+    .pc2-by { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; margin-bottom: 8px; }
+    .pc2-by-img, .pc2-by-fallback { border-radius: 50%; flex-shrink: 0; object-fit: cover; border: 2px solid rgba(255,255,255,0.85); box-sizing: border-box; }
+    .pc2-by-fallback { display: inline-flex; align-items: center; justify-content: center; background: #16a34a; color: #fff; font-size: 0.7rem; font-weight: 700; }
+    .pc2-by-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; font-weight: 600; color: #fff; }
+    .pc2-by-check { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%; background: #16a34a; color: #fff; font-size: 0.6rem; font-weight: 800; }
+
+    /* ---------- Card size control ---------- */
+    .ad-size { display: inline-flex; margin-left: 0; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #fff; }
+    .ad-size-btn { min-width: 40px; min-height: 42px; padding: 0 12px; border: none; background: transparent; color: #475569; font-weight: 700; cursor: pointer; }
+    .ad-size-btn + .ad-size-btn { border-left: 1px solid #e2e8f0; }
+    .ad-size-btn.active { background: #16a34a; color: #fff; }
+    .ad-size-btn:focus-visible { outline: 3px solid #16a34a; outline-offset: -3px; }
     .pc2-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
     .pc2-tag { background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; }
     .pc2-adopt {
@@ -370,9 +389,34 @@ function useFocusTrap(ref, active) {
   }, [ref, active]);
 }
 
+/* ---------- Poster (who listed the pet) ---------- */
+
+const posterIdOf = (pet) => pet.postedBy || pet.shelterId || pet.userId || null;
+const initialsOf = (name) =>
+  (name || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+function PosterChip({ poster, role, size = 26 }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [poster?.photo]);
+  const name = poster?.name || (role === "shelter" ? "Shelter" : "Pet owner");
+  return (
+    <span className="pc2-by">
+      {poster?.photo && !broken ? (
+        <img className="pc2-by-img" src={poster.photo} alt="" width={size} height={size} onError={() => setBroken(true)} />
+      ) : (
+        <span className="pc2-by-fallback" style={{ width: size, height: size }} aria-hidden="true">
+          {initialsOf(name)}
+        </span>
+      )}
+      <span className="pc2-by-name">{name}</span>
+      {poster?.verified && <span className="pc2-by-check" title="Verified" aria-label="Verified">✓</span>}
+    </span>
+  );
+}
+
 /* ---------- Collapsed pet card ---------- */
 
-function PetCard({ pet, onExpand, index, saved, onToggleSave }) {
+function PetCard({ pet, poster, onExpand, index, saved, onToggleSave }) {
   const img = usePetImage(pet);
   const badge = pet.badge || pet.status || "Available";
   const meta = [pet.age, pet.gender, pet.city || pet.location].filter(Boolean).join(" · ");
@@ -400,6 +444,7 @@ function PetCard({ pet, onExpand, index, saved, onToggleSave }) {
         {saved ? "♥" : "♡"}
       </button>
       <div className="pc2-info">
+        <PosterChip poster={poster} role={pet.postedByRole} />
         <p className="pc2-sub">{pet.breed || pet.type}</p>
         <h3 className="pc2-name">
           <button type="button" className="pc2-name-btn" aria-haspopup="dialog">{pet.name}</button>
@@ -420,7 +465,7 @@ const EMPTY_CONTACT = {
   reason: "",
 };
 
-function ExpandedPetPanel({ pet, user, applied, authVersion, onClose, onRequireAuth, onSubmit }) {
+function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, onRequireAuth, onSubmit }) {
   const [step, setStep] = useState("details"); // details | form | success
   const [contact, setContact] = useState(EMPTY_CONTACT);
   const [errors, setErrors] = useState({});
@@ -547,9 +592,10 @@ function ExpandedPetPanel({ pet, user, applied, authVersion, onClose, onRequireA
                 <div><dt>Breed</dt><dd>{pet.breed || "—"}</dd></div>
               </dl>
 
-              <p className="pc2-poster">
-                Posted by {pet.postedByRole === "shelter" ? "a verified shelter" : "a pet owner"}
-              </p>
+              <div className="pc2-poster">
+                <span className="pc2-poster-label">Posted by</span>
+                <PosterChip poster={poster} role={pet.postedByRole} size={32} />
+              </div>
 
               <p className="pc2-desc">{pet.description || "Looking for a loving home!"}</p>
 
@@ -829,6 +875,19 @@ export default function Adopt() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [savedIds, setSavedIds] = useState(() => new Set());
 
+  // Card size (S / M / L), remembered between visits.
+  const CARD_MIN = { S: "190px", M: "250px", L: "330px" };
+  const [cardSize, setCardSize] = useState(() => {
+    try { const s = localStorage.getItem("adoptCardSize"); return CARD_MIN[s] ? s : "M"; } catch { return "M"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("adoptCardSize", cardSize); } catch { /* storage unavailable */ }
+  }, [cardSize]);
+
+  // Who listed each pet: name, photo and verified flag from users/{uid}.
+  const [posters, setPosters] = useState({});
+  const requestedPosters = useRef(new Set());
+
   const [user, setUser] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [authVersion, setAuthVersion] = useState(0); // bumped on each successful auth
@@ -896,6 +955,32 @@ export default function Adopt() {
       .catch((err) => console.error("Error fetching applications:", err));
     return () => { cancelled = true; };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const missing = [...new Set(pets.map(posterIdOf).filter(Boolean))].filter(
+      (id) => !requestedPosters.current.has(id)
+    );
+    if (missing.length === 0) return;
+    missing.forEach((id) => requestedPosters.current.add(id));
+    Promise.all(
+      missing.map(async (id) => {
+        try {
+          const snap = await getDoc(doc(db, "users", id));
+          if (!snap.exists()) return [id, null];
+          const d = snap.data();
+          const photo =
+            d.role === "shelter"
+              ? d.logoUrl || d.photoURL || d.photoUrl
+              : d.photoURL || d.photoUrl || d.logoUrl;
+          return [id, { name: d.shelterName || d.name || d.displayName || "", photo: photo || "", verified: d.isVerified === true }];
+        } catch (err) {
+          console.warn("Couldn't load poster profile:", err);
+          return [id, null];
+        }
+      })
+    ).then((pairs) => setPosters((prev) => ({ ...prev, ...Object.fromEntries(pairs) })));
+  }, [pets, user]);
 
   const selectFilter = (cat) => setParam("type", cat, "All");
 
@@ -1147,7 +1232,7 @@ export default function Adopt() {
 
         </aside>
 
-        <main className="ad-main">
+        <main className="ad-main" style={{ "--card-min": CARD_MIN[cardSize] }}>
           <div className="ad-chips" role="group" aria-label="Species">
             {Object.keys(TYPE_ICONS).map((cat) => (
               <button
@@ -1172,6 +1257,22 @@ export default function Adopt() {
               <option value="youngest">Youngest</option>
               <option value="oldest">Oldest</option>
             </select>
+
+            <div className="ad-size" role="group" aria-label="Card size">
+              {[["S", "Small"], ["M", "Medium"], ["L", "Large"]].map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={`ad-size-btn ${cardSize === k ? "active" : ""}`}
+                  aria-pressed={cardSize === k}
+                  aria-label={`${label} cards`}
+                  title={`${label} cards`}
+                  onClick={() => setCardSize(k)}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
           </div>
 
           {petsLoading ? (
@@ -1201,6 +1302,7 @@ export default function Adopt() {
                       <PetCard
                         key={pet.id}
                         pet={pet}
+                        poster={posters[posterIdOf(pet)]}
                         index={i}
                         onExpand={setExpandedPet}
                         saved={savedIds.has(pet.id)}
@@ -1229,6 +1331,7 @@ export default function Adopt() {
           <ExpandedPetPanel
             key={expandedPet.id}
             pet={expandedPet}
+            poster={posters[posterIdOf(expandedPet)]}
             user={user}
             applied={appliedIds}
             authVersion={authVersion}

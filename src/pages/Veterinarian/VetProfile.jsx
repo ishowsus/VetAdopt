@@ -1,6 +1,24 @@
 import { useEffect, useState } from "react";
-import { auth, db } from "../../firebase";
+import { auth, db, storage } from "../../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadProfilePhoto } from "../../utils/profilePhoto";
+import VerificationPanel, { VerificationBadge, useVerification } from "../../components/shared/VerificationPanel"; // adjust path
+import PasswordPanel from "../../components/shared/PasswordPanel"; // adjust path
+
+const TABS = [
+  { key: "profile", label: "Profile" },
+  { key: "verification", label: "Verification" },
+  { key: "security", label: "Security" },
+];
+
+// Verification documents go in a per-user folder; lock reads down in Storage rules.
+const uploadVerificationDoc = async (file, uid) => {
+  const ext = file.name.split(".").pop();
+  const r = ref(storage, `verificationDocs/${uid}/license_${Date.now()}.${ext}`);
+  await uploadBytes(r, file);
+  return r.fullPath;
+};
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -21,6 +39,7 @@ const EMPTY_PROFILE = {
   experience: "",
   address: "",
   workingHours: "",
+  photoURL: "",
   lat: null,
   lng: null,
   availability: EMPTY_AVAILABILITY,
@@ -46,6 +65,9 @@ function VetProfile() {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [geocoding, setGeocoding] = useState(false);
+  const [tab, setTab] = useState("profile");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const { data: verification } = useVerification(auth.currentUser?.uid);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -91,6 +113,24 @@ function VetProfile() {
 
   const handleChange = (key) => (e) => {
     setDraft((prev) => ({ ...prev, [key]: e.target.value }));
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const currentUser = auth.currentUser;
+    if (!file || !currentUser) return;
+    setUploadingPhoto(true);
+    setError("");
+    try {
+      const url = await uploadProfilePhoto(file, currentUser.uid, profile.photoURL);
+      setProfile((p) => ({ ...p, photoURL: url }));
+      setDraft((d) => ({ ...d, photoURL: url }));
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Couldn't upload your photo. Try again.");
+    }
+    setUploadingPhoto(false);
   };
 
   const handleEditClick = () => {
@@ -209,9 +249,10 @@ function VetProfile() {
 
     try {
       const docRef = doc(db, "users", currentUser.uid);
-      const payload = { ...draft, role: "vet" };
+      const { photoURL, isVerified, ...rest } = draft; // photo and verified flag are written elsewhere
+      const payload = { ...rest, role: "vet" };
       await setDoc(docRef, payload, { merge: true });
-      setProfile(payload);
+      setProfile((prev) => ({ ...prev, ...payload }));
       setEditing(false);
     } catch (err) {
       console.error(err);
@@ -230,15 +271,48 @@ function VetProfile() {
       <div style={styles.card}>
         <div style={styles.header}>
           <img
-            src="https://ui-avatars.com/api/?name=Veterinarian&background=2e7d32&color=fff&size=200"
+            src={
+              profile.photoURL ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || "Veterinarian")}&background=2e7d32&color=fff&size=200`
+            }
             alt="Profile"
             style={styles.avatar}
           />
+          <div>
+            <label style={styles.photoButton}>
+              {uploadingPhoto ? "Uploading…" : "Change photo"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                disabled={uploadingPhoto}
+                style={{ display: "none" }}
+              />
+            </label>
+          </div>
           <h2>{profile.name || "Veterinarian"}</h2>
           <p>{profile.email}</p>
+          <VerificationBadge status={verification?.status || "unverified"} />
+        </div>
+
+        <div style={styles.tabBar} role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={tab === t.key}
+              style={{ ...styles.tab, ...(tab === t.key ? styles.tabActive : {}) }}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {error && <div style={styles.errorBanner}>{error}</div>}
+
+        {tab === "profile" && (
+        <>
 
         <div style={styles.grid}>
           {FIELDS.map((field) =>
@@ -389,6 +463,32 @@ function VetProfile() {
             </button>
           </div>
         )}
+        </>
+        )}
+
+        {tab === "verification" && (
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>Verification</h3>
+            <p style={styles.sectionSub}>
+              Verified vets are shown first to adopters. Verify your email, then submit your license for review.
+            </p>
+            <VerificationPanel
+              role="vet"
+              documentLabel="Veterinary license"
+              numberLabel="License number"
+              defaultNumber={profile.licenseNumber}
+              uploadFile={uploadVerificationDoc}
+            />
+          </div>
+        )}
+
+        {tab === "security" && (
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>Change password</h3>
+            <p style={styles.sectionSub}>We'll check your current password before making the change.</p>
+            <PasswordPanel />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -446,6 +546,39 @@ const styles = {
     borderRadius: "50%",
     border: "5px solid white",
     marginBottom: "15px",
+  },
+
+  photoButton: {
+    display: "inline-block",
+    marginBottom: "12px",
+    padding: "6px 14px",
+    border: "1px solid rgba(255,255,255,.7)",
+    borderRadius: "999px",
+    fontSize: "13px",
+    cursor: "pointer",
+  },
+
+  tabBar: {
+    display: "flex",
+    borderBottom: "1px solid #e0e8e0",
+    padding: "0 30px",
+    gap: "6px",
+  },
+
+  tab: {
+    padding: "14px 16px",
+    background: "none",
+    border: "none",
+    borderBottom: "3px solid transparent",
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "#607d8b",
+    cursor: "pointer",
+  },
+
+  tabActive: {
+    color: "#2e7d32",
+    borderBottomColor: "#2e7d32",
   },
 
   errorBanner: {

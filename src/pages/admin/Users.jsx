@@ -228,7 +228,7 @@ export default function Users() {
           transition: all 0.15s;
         }
         .um-filter-btn:hover { border-color: var(--green); color: var(--green-dark); }
-        .um-filter-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .um-filter-btn.active { background: var(--ink); color: #c5e21f; border-color: var(--ink); }
         .um-filter-btn:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
 
         .um-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -241,7 +241,7 @@ export default function Users() {
           border-radius: 12px;
           font: inherit;
           font-size: 0.92rem;
-          background: #fff;
+          background: #e0e0e0;
           color: var(--ink);
           outline: none;
           transition: border-color 0.15s, box-shadow 0.15s;

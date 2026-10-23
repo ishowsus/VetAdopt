@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db, storage } from "../firebase";
+import { auth, db } from "../firebase";
+import { uploadProfilePhoto, syncLocalUser } from "../utils/profilePhoto";
 import { signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import VerificationPanel from "../components/shared/VerificationPanel"; // adjust path
 
 // ─── tiny toast helper ────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
@@ -57,7 +58,7 @@ export default function ProfileSettings() {
   const fileInputRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState("general");
-  const [user, setUser] = useState({ name: "", email: "", role: "Adopter", photoURL: "" });
+  const [user, setUser] = useState({ name: "", email: "", role: "Adopter", photoURL: "", emailVerified: false });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -86,7 +87,9 @@ export default function ProfileSettings() {
           email: currentUser.email,
           role: data.role || "Adopter",
           photoURL: data.photoURL || currentUser.photoURL || "",
+          emailVerified: currentUser.emailVerified,
         });
+        syncLocalUser({ photoURL: data.photoURL || currentUser.photoURL || "" });
       } catch (err) { console.error(err); }
       setLoading(false);
     });
@@ -122,21 +125,20 @@ export default function ProfileSettings() {
     finally { setIsSaving(false); }
   };
 
-  // ── photo upload ─────────────────────────────────────────────────────────────
+  // ── photo upload (Supabase) ──────────────────────────────────────────────────
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showToast("Photo must be under 5 MB.", "error"); return; }
+    e.target.value = "";
+    if (!file || !auth.currentUser) return;
     setUploadingPhoto(true);
     try {
-      const storageRef = ref(storage, `profilePhotos/${auth.currentUser.uid}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      await updateDoc(doc(db, "users", auth.currentUser.uid), { photoURL: url });
+      const url = await uploadProfilePhoto(file, auth.currentUser.uid, user.photoURL);
       setUser((u) => ({ ...u, photoURL: url }));
       showToast("Photo updated!");
-    } catch (e) { showToast(e.message, "error"); }
-    finally { setUploadingPhoto(false); }
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Couldn't upload your photo.", "error");
+    } finally { setUploadingPhoto(false); }
   };
 
   // ── change password ──────────────────────────────────────────────────────────
@@ -188,6 +190,7 @@ export default function ProfileSettings() {
 
   const tabs = [
     { key: "general", icon: "👤", label: "Account" },
+    { key: "verification", icon: "✅", label: "Verification" },
     { key: "password", icon: "🔒", label: "Password" },
     { key: "notifications", icon: "🔔", label: "Activity" },
   ];
@@ -244,6 +247,7 @@ export default function ProfileSettings() {
           border: 1px solid #c8e6c9;
         }
 
+        .ps-verified { margin-top: 8px; font-size: 0.72rem; font-weight: 700; color: #2e7d32; }
         .ps-nav { width: 100%; margin-top: 32px; }
         .ps-nav-btn {
           width: 100%; padding: 13px 16px; margin-bottom: 6px;
@@ -340,6 +344,7 @@ export default function ProfileSettings() {
           <p className="ps-user-name">{user.name}</p>
           <p className="ps-user-email">{user.email}</p>
           <span className="ps-role-badge">{user.role}</span>
+          {user.emailVerified && <span className="ps-verified">✓ Email verified</span>}
 
           <nav className="ps-nav">
             {tabs.map((t) => (
@@ -401,6 +406,16 @@ export default function ProfileSettings() {
               <button className="ps-btn ps-btn-primary" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? "Saving…" : "Save Changes"}
               </button>
+            </div>
+          )}
+
+          {/* Verification */}
+          {activeTab === "verification" && (
+            <div>
+              <h2 className="ps-section-title">Verification</h2>
+              <p className="ps-section-sub">Confirm your email so shelters know you're a real person.</p>
+              <hr className="ps-divider" />
+              <VerificationPanel role="adopter" requireDocument={false} />
             </div>
           )}
 

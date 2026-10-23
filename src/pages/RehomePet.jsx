@@ -384,7 +384,7 @@ function RehomePet() {
                     <button style={styles.deleteButton} onClick={() => handleDelete(pet)}>
                       Remove
                     </button>
-                  </div>
+                  </div> 
                 </div>
               </div>
             );

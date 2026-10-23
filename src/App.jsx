@@ -25,6 +25,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Users from "./pages/admin/Users";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
+import Verifications from "./pages/admin/Verifications";
 
 // Vet Pages & Layout
 import VetLayout from "./layouts/VetLayout";
@@ -233,6 +234,7 @@ function App() {
               <Route path="animal" element={<Navigate to="/admin/animals" replace />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="verifications" element={<Verifications />} />
               <Route
                 path="*"
                 element={
