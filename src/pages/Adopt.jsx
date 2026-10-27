@@ -22,6 +22,9 @@ import {
   updateProfile,
 } from "firebase/auth";
 
+import MessageButton from "../components/MessageButton";
+import { postApplicationUpdate } from "../utils/chat";
+
 const PAGE_SIZE = 9;
 
 const TYPE_ICONS = { All: "🐾", Dog: "🐶", Cat: "🐱", Rabbit: "🐰", Bird: "🦜" };
@@ -595,6 +598,15 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
               <div className="pc2-poster">
                 <span className="pc2-poster-label">Posted by</span>
                 <PosterChip poster={poster} role={pet.postedByRole} size={32} />
+                {String(pet.postedByRole || "").toLowerCase() === "shelter" && (
+                  <MessageButton
+                    toUid={posterIdOf(pet)}
+                    me={user}
+                    petId={pet.id}
+                    petName={pet.name}
+                    onRequireAuth={onRequireAuth}
+                  />
+                )}
               </div>
 
               <p className="pc2-desc">{pet.description || "Looking for a loving home!"}</p>
@@ -1133,6 +1145,18 @@ export default function Adopt() {
 
     await batch.commit();
     setAppliedIds((prev) => new Set(prev).add(pet.id));
+
+    // Also drop a status line into the adopter ⇄ shelter chat (shelter listings only).
+    if (String(pet.postedByRole || "").toLowerCase() === "shelter" && ownerId && ownerId !== user.uid) {
+      postApplicationUpdate({
+        meId: user.uid,
+        otherId: ownerId,
+        petId: pet.id,
+        petName: pet.name,
+        status: "submitted",
+        senderName: contact.fullName.trim(),
+      }).catch((err) => console.warn("Couldn't post chat update:", err));
+    }
   };
 
   const resetFilters = () => setSearchParams({}, { replace: true });

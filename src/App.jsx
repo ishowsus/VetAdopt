@@ -14,6 +14,7 @@ import Adopt from "./pages/Adopt";
 import VetMap from "./pages/VetMap";
 import ProfileSettings from "./pages/ProfileSettings";
 import PetMatchmaker from "./pages/PetMatchmaker";
+import Messages from "./pages/Messages";
 
 // Admin Context & Layout
 import { AdminProvider } from "./layouts/AdminContext";
@@ -216,6 +217,7 @@ function App() {
             <Route path="/quiz" element={<ProtectedRoute user={user}><PetMatchmaker /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute user={user}><ProfileSettings /></ProtectedRoute>} />
             <Route path="/donate" element={<ProtectedRoute user={user}><Donate /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute user={user}><Messages /></ProtectedRoute>} />
 
             {/* Admin Routes */}
             <Route
@@ -259,6 +261,7 @@ function App() {
               <Route path="appointments" element={<Appointment />} />
               <Route path="medical-records" element={<MedicalRecords />} />
               <Route path="profile" element={<VetProfile />} />
+              <Route path="messages" element={<Messages />} />
               <Route
                 path="*"
                 element={
@@ -283,6 +286,7 @@ function App() {
               <Route path="adoption-requests" element={<AdoptionRequests />} />
               <Route path="donations" element={<Donations />} />
               <Route path="profile" element={<ShelterProfile />} />
+              <Route path="messages" element={<Messages />} />
               <Route
                 path="*"
                 element={
