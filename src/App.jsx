@@ -15,7 +15,7 @@ import VetMap from "./pages/VetMap";
 import ProfileSettings from "./pages/ProfileSettings";
 import PetMatchmaker from "./pages/PetMatchmaker";
 import Messages from "./pages/Messages";
-import PostPet from "./pages/PostPet";
+import postPet from "./pages/postPet";
 
 // Admin Context & Layout
 import { AdminProvider } from "./layouts/AdminContext";
