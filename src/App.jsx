@@ -30,6 +30,7 @@ import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import Verifications from "./pages/admin/Verifications";
 import Listings from "./pages/admin/Listings";
+import AdoptionListings from "./pages/admin/AdoptionListings";
 
 // Vet Pages & Layout
 import VetLayout from "./layouts/VetLayout";
@@ -242,6 +243,7 @@ function App() {
               <Route path="settings" element={<Settings />} />
               <Route path="verifications" element={<Verifications />} />
               <Route path="listings" element={<Listings />} />
+              <Route path="adoptionlistings" element={<AdoptionListings />} />
               <Route
                 path="*"
                 element={
