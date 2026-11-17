@@ -4,7 +4,8 @@ import { supabase } from "../../supabase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import { Loader2, Upload } from "lucide-react";
-import { geocodeAddress } from "../../utils/Geocode";
+import { geocodeAddress } from "../../utils/geocode";
+import LocationPicker from "../../components/LocationPicker";
 import VerificationPanel, { VerificationBadge, useVerification } from "../../components/shared/VerificationPanel"; // adjust path
 import PasswordPanel from "../../components/shared/PasswordPanel"; // adjust path
 import AvailabilityEditor from "../../components/AvailabilityEditor";
@@ -40,6 +41,8 @@ export default function ShelterProfile() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const savedAddress = useRef("");
   const hasCoords = useRef(false);
+  const pinTouched = useRef(false);
+  const [pin, setPin] = useState(null);
   const [tab, setTab] = useState("profile");
   const { data: verification } = useVerification(auth.currentUser?.uid);
   const [notice, setNotice] = useState("");
@@ -72,7 +75,12 @@ export default function ShelterProfile() {
           logoUrl: data.logoUrl || data.photoUrl || "",
         });
         savedAddress.current = (data.address || "").trim();
-        hasCoords.current = typeof data.lat === "number" && typeof data.lng === "number";
+        // Accept numbers saved as text too, and fix them to real numbers on the next save.
+        const lat = Number(data.lat);
+        const lng = Number(data.lng);
+        const valid = data.lat !== undefined && data.lat !== null && data.lat !== "" && Number.isFinite(lat) && Number.isFinite(lng);
+        hasCoords.current = valid;
+        if (valid) setPin({ lat, lng });
       }
     } catch (err) {
       console.error("Error fetching shelter profile:", err);
@@ -179,16 +187,22 @@ export default function ShelterProfile() {
 
       // setDoc + merge (rather than updateDoc) so this doesn't throw for shelters
       // whose "users" doc hasn't been created yet (e.g. right after signup).
-      // Put the shelter on the home-page map when the address is new or changed.
+      // Put the shelter on the maps. A pin the shelter placed itself wins; otherwise look up the address.
       const address = profile.address.trim();
-      let coords = null;
+      let coords = pin;
       let mapNote = "";
-      if (address && (address !== savedAddress.current || !hasCoords.current)) {
+      const addressChanged = address !== savedAddress.current;
+      if (address && (!coords || (addressChanged && !pinTouched.current))) {
         try {
-          coords = await geocodeAddress(address);
-          if (!coords) mapNote = " We couldn't place that address on the map. Add more detail (street, barangay, city).";
+          const found = await geocodeAddress(address);
+          if (found) {
+            coords = found;
+            setPin(found);
+          } else if (!coords) {
+            mapNote = " We couldn't place that address on the map. Use the map below to place your pin.";
+          }
         } catch {
-          mapNote = " We couldn't reach the map service, so your map pin wasn't updated.";
+          if (!coords) mapNote = " We couldn't reach the map service. Use the map below to place your pin.";
         }
       }
 
@@ -205,9 +219,10 @@ export default function ShelterProfile() {
         { merge: true }
       );
       savedAddress.current = address;
+      pinTouched.current = false;
       if (coords) hasCoords.current = true;
 
-      setNotice(`Profile updated successfully!${coords ? " You're now on the map." : ""}${mapNote}`);
+      setNotice(`Profile updated successfully!${coords ? " You're on the map." : mapNote}`);
     } catch (err) {
       console.error("Error saving profile:", err);
       setError("Failed to save profile changes.");
@@ -355,6 +370,15 @@ export default function ShelterProfile() {
             style={{ width: "100%", padding: "0.5rem", border: "1px solid #d1d5db", borderRadius: "6px" }}
           />
         </div>
+
+        <LocationPicker
+          value={pin}
+          address={profile.address}
+          onChange={(c) => {
+            pinTouched.current = true;
+            setPin(c);
+          }}
+        />
 
         <div>
           <label htmlFor="shelter-description" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Description</label>

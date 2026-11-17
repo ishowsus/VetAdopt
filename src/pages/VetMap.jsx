@@ -132,12 +132,13 @@ export default function VetMap() {
 
   // Shelters that have put themselves on the map (they get coordinates when they save their address).
   useEffect(() => {
-    getDocs(query(collection(db, "users"), where("role", "==", "shelter")))
+    getDocs(query(collection(db, "users"), where("role", "in", ["shelter", "Shelter"])))
       .then((snap) =>
         setShelters(
           snap.docs
             .map((d) => ({ id: d.id, ...d.data() }))
-            .filter((s) => typeof s.lat === "number" && typeof s.lng === "number")
+            .map((s) => ({ ...s, lat: Number(s.lat), lng: Number(s.lng) }))
+            .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng))
         )
       )
       .catch((e) => console.error(e))

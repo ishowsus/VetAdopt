@@ -1,168 +1,215 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { onAuthStateChanged } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
-const TONE = {
-  Pending: { bg: "#fef3c7", fg: "#92400e", label: "Awaiting shelter confirmation" },
-  Received: { bg: "#d1fae5", fg: "#065f46", label: "Received" },
-  "Not received": { bg: "#fee2e2", fg: "#b91c1c", label: "Shelter couldn't find it" },
-  Cancelled: { bg: "#f1f5f9", fg: "#475569", label: "Cancelled" },
+const CEBU = [10.3157, 123.8854];
+
+const pin = (emoji, bg) =>
+  L.divIcon({
+    className: "nm-pin-wrap",
+    html: `<span class="nm-pin" style="background:${bg}">${emoji}</span>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -20],
+  });
+const ICONS = { vet: pin("🩺", "#15803d"), shelter: pin("🏠", "#1d4ed8") };
+
+const km = (a, b, c, d) => {
+  const R = 6371, r = Math.PI / 180;
+  const x = Math.sin(((c - a) * r) / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(((d - b) * r) / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 };
 
-const toDate = (d) => (d.createdAt?.toDate ? d.createdAt.toDate() : new Date(d.date || 0));
-const peso = (n) => `₱${Number(n || 0).toLocaleString()}`;
-const esc = (s) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-// Opens a printable receipt. Everything inserted is escaped.
-function printReceipt(d) {
-  const w = window.open("", "_blank", "width=720,height=900");
-  if (!w) return false;
-  const when = toDate(d).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Donation receipt</title>
-<style>
-body{font-family:Arial,sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#0f172a}
-h1{margin:0;font-size:22px;color:#15803d} .muted{color:#64748b;font-size:13px}
-table{width:100%;border-collapse:collapse;margin:24px 0} td{padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:15px} td:first-child{color:#64748b;width:40%}
-.amount{font-size:28px;font-weight:700;color:#15803d} .note{font-size:12px;color:#64748b;margin-top:24px;line-height:1.5}
-@media print{button{display:none}}
-</style></head><body>
-<h1>VetAdopt</h1><p class="muted">Donation receipt</p>
-<p class="amount">${esc(peso(d.amount))}</p>
-<table>
-<tr><td>Receipt no.</td><td>VA-${esc(d.id.slice(0, 8).toUpperCase())}</td></tr>
-<tr><td>Date</td><td>${esc(when)}</td></tr>
-<tr><td>Donor</td><td>${esc(d.donorName || "Anonymous")}</td></tr>
-<tr><td>Donated to</td><td>${esc(d.shelterName || "Shelter")}</td></tr>
-<tr><td>Payment method</td><td>${esc(d.paymentMethod || "E-wallet")}</td></tr>
-<tr><td>Status</td><td>Received</td></tr>
-</table>
-<p class="note">Thank you for helping a pet find a second chance. This is a record of your donation issued through VetAdopt. It is not an official BIR receipt. Ask the shelter if you need one for tax purposes.</p>
-<button onclick="window.print()" style="padding:10px 20px;font-size:15px;cursor:pointer">Print</button>
-</body></html>`);
-  w.document.close();
-  w.focus();
-  setTimeout(() => w.print(), 300);
-  return true;
+function FlyTo({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) map.flyTo(center, 15, { duration: 1 });
+  }, [center, map]);
+  return null;
 }
 
-/** A donor's own donation history, with receipts for confirmed donations. */
-export default function DonationHistory() {
-  const [uid, setUid] = useState(auth.currentUser?.uid || null);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState("");
+const directions = (p) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
 
-  useEffect(() => onAuthStateChanged(auth, (u) => setUid(u?.uid || null)), []);
+/** Home-page map of vets and shelters (OpenStreetMap, no API key). Needs a signed-in user. */
+export default function NearbyMap() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(undefined); // undefined = still checking
+  const [places, setPlaces] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [center, setCenter] = useState(CEBU);
+  const [fly, setFly] = useState(null);
+  const [locating, setLocating] = useState(false);
+
+  useEffect(() => onAuthStateChanged(auth, (u) => setUser(u || null)), []);
 
   useEffect(() => {
-    if (!uid) {
-      setLoading(false);
-      return undefined;
-    }
-    const q = query(collection(db, "donations"), where("donorId", "==", uid));
-    return onSnapshot(
-      q,
-      (snap) => {
-        setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => toDate(b) - toDate(a)));
-        setLoading(false);
-      },
-      (err) => {
-        console.error(err);
-        setError("Couldn't load your donations.");
-        setLoading(false);
-      }
-    );
-  }, [uid]);
-
-  const stats = useMemo(() => {
-    const received = items.filter((d) => d.status === "Received");
-    const year = new Date().getFullYear();
-    return {
-      total: received.reduce((s, d) => s + (Number(d.amount) || 0), 0),
-      thisYear: received.filter((d) => toDate(d).getFullYear() === year).reduce((s, d) => s + (Number(d.amount) || 0), 0),
-      shelters: new Set(received.map((d) => d.shelterId)).size,
-      pending: items.filter((d) => d.status === "Pending").length,
+    if (!user) return;
+    setLoading(true);
+    const load = async (roles, kind) => {
+      const snap = await getDocs(query(collection(db, "users"), where("role", "in", roles)));
+      return snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .map((u) => ({ ...u, lat: Number(u.lat), lng: Number(u.lng) }))
+        .filter((u) => Number.isFinite(u.lat) && Number.isFinite(u.lng))
+        .map((u) => ({
+          id: u.id,
+          kind,
+          name: u.clinicName || u.shelterName || u.name || (kind === "vet" ? "Veterinary clinic" : "Animal shelter"),
+          address: u.address || "",
+          phone: u.phone || "",
+          hours: kind === "vet" ? u.workingHours || "" : "",
+          verified: u.isVerified === true,
+          lat: u.lat,
+          lng: u.lng,
+        }));
     };
-  }, [items]);
+    Promise.all([load(["vet", "Vet", "veterinarian"], "vet"), load(["shelter", "Shelter"], "shelter")])
+      .then(([vets, shelters]) => setPlaces([...vets, ...shelters]))
+      .catch((e) => {
+        console.error(e);
+        setError("Couldn't load the map right now.");
+      })
+      .finally(() => setLoading(false));
+  }, [user]);
 
-  const cancel = async (d) => {
-    setBusyId(d.id);
+  const shown = useMemo(
+    () =>
+      places
+        .filter((p) => filter === "all" || p.kind === filter)
+        .map((p) => ({ ...p, distance: km(center[0], center[1], p.lat, p.lng) }))
+        .sort((a, b) => a.distance - b.distance),
+    [places, filter, center]
+  );
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) return setError("Your browser can't share its location.");
+    setLocating(true);
     setError("");
-    try {
-      await updateDoc(doc(db, "donations", d.id), { status: "Cancelled", updatedAt: serverTimestamp() });
-    } catch (e) {
-      console.error(e);
-      setError("Couldn't cancel that donation.");
-    }
-    setBusyId("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const c = [pos.coords.latitude, pos.coords.longitude];
+        setCenter(c);
+        setFly(c);
+        setLocating(false);
+      },
+      () => {
+        setError("We couldn't get your location. Showing Cebu City instead.");
+        setLocating(false);
+      },
+      { timeout: 8000 }
+    );
   };
 
-  if (loading) return <p>Loading…</p>;
+  const openPlace = (p) => navigate(p.kind === "vet" ? "/vets" : "/adopt");
+
+  if (user === undefined) return <div className="nm-box">Loading…</div>;
+
+  if (user === null) {
+    return (
+      <div className="nm-teaser">
+        <style>{CSS}</style>
+        <span aria-hidden="true" style={{ fontSize: "2.4rem" }}>🗺️</span>
+        <h3>See vets and shelters near you</h3>
+        <p>Sign in to explore the map, book a vet, or plan a shelter visit.</p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <button type="button" className="nm-btn" onClick={() => navigate("/login")}>Sign in</button>
+          <button type="button" className="nm-btn nm-ghost" onClick={() => navigate("/register")}>Create account</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div style={s.stats}>
-        <div style={s.stat}><strong style={s.big}>{peso(stats.total)}</strong><span style={s.muted}>given in total</span></div>
-        <div style={s.stat}><strong style={s.big}>{peso(stats.thisYear)}</strong><span style={s.muted}>this year</span></div>
-        <div style={s.stat}><strong style={s.big}>{stats.shelters}</strong><span style={s.muted}>shelter{stats.shelters === 1 ? "" : "s"} helped</span></div>
-      </div>
-      <p style={{ ...s.muted, margin: "0 0 14px" }}>
-        Totals count only donations the shelter has confirmed. {stats.pending > 0 && `${stats.pending} still waiting for confirmation.`}
-      </p>
+    <div className="nm-wrap">
+      <style>{CSS}</style>
 
-      {error && <p role="alert" style={s.error}>{error}</p>}
-
-      {items.length === 0 ? (
-        <div style={s.empty}>
-          <p style={{ margin: "0 0 10px" }}>You haven't made any donations yet.</p>
-          <Link to="/donate" style={s.btn}>Donate to a shelter</Link>
+      <div className="nm-bar">
+        <div role="group" aria-label="Show on map" className="nm-filters">
+          {[["all", "All"], ["vet", "🩺 Vets"], ["shelter", "🏠 Shelters"]].map(([k, label]) => (
+            <button key={k} type="button" aria-pressed={filter === k} className={`nm-chip ${filter === k ? "on" : ""}`} onClick={() => setFilter(k)}>{label}</button>
+          ))}
         </div>
-      ) : (
-        items.map((d) => {
-          const tone = TONE[d.status] || TONE.Pending;
-          return (
-            <div key={d.id} style={s.card}>
-              <div style={s.row}>
-                <strong>{d.shelterName || "Shelter"}</strong>
-                <span style={{ ...s.chip, background: tone.bg, color: tone.fg }}>{tone.label}</span>
-              </div>
-              <div style={s.muted}>
-                {peso(d.amount)} · {d.paymentMethod || "E-wallet"} · {toDate(d).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-              </div>
-              {d.message && <p style={s.note}>“{d.message}”</p>}
-              <div style={s.actions}>
-                {d.status === "Received" && (
-                  <button type="button" style={s.secondary} onClick={() => !printReceipt(d) && setError("Allow pop-ups to print your receipt.")}>Receipt</button>
-                )}
-                {d.status === "Pending" && (
-                  <button type="button" style={s.danger} disabled={busyId === d.id} onClick={() => cancel(d)}>Cancel</button>
-                )}
-              </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="nm-btn nm-ghost" onClick={useMyLocation} disabled={locating}>{locating ? "Locating…" : "📍 Use my location"}</button>
+          <button type="button" className="nm-btn" onClick={() => navigate("/vets")}>Open full vet map →</button>
+        </div>
+      </div>
+
+      {error && <p role="alert" className="nm-error">{error}</p>}
+
+      <div className="nm-map" role="region" aria-label="Map of nearby vets and shelters">
+        <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap contributors" />
+          {shown.map((p) => (
+            <Marker key={`${p.kind}-${p.id}`} position={[p.lat, p.lng]} icon={ICONS[p.kind]} title={p.name}>
+              <Popup>
+                <strong>{p.name}{p.verified && " ✓"}</strong>
+                <div style={{ fontSize: 12, color: "#64748b", margin: "4px 0 8px" }}>
+                  {p.kind === "vet" ? "Veterinary clinic" : "Animal shelter"}
+                  {p.address && <><br />{p.address}</>}
+                  {p.hours && <><br />{p.hours}</>}
+                </div>
+                <a href={directions(p)} target="_blank" rel="noopener noreferrer" style={{ marginRight: 10 }}>Directions</a>
+                <a href="#!" onClick={(e) => { e.preventDefault(); openPlace(p); }}>{p.kind === "vet" ? "Book a vet" : "See pets"}</a>
+              </Popup>
+            </Marker>
+          ))}
+          {fly && <FlyTo center={fly} />}
+        </MapContainer>
+        {loading && <div className="nm-loading">Loading places…</div>}
+      </div>
+
+      {/* The same places as a list: easier to scan, and usable without the map. */}
+      {!loading && shown.length === 0 && <p className="nm-empty">No {filter === "all" ? "vets or shelters" : filter === "vet" ? "vets" : "shelters"} have put themselves on the map yet.</p>}
+      <ul className="nm-list">
+        {shown.slice(0, 6).map((p) => (
+          <li key={`${p.kind}-${p.id}`} className="nm-item">
+            <span className="nm-kind" aria-hidden="true">{p.kind === "vet" ? "🩺" : "🏠"}</span>
+            <div className="nm-info">
+              <strong>{p.name}{p.verified && <span className="nm-check" title="Verified" aria-label="Verified">✓</span>}</strong>
+              <span>{p.kind === "vet" ? "Vet" : "Shelter"} · {p.distance.toFixed(1)} km{p.address ? ` · ${p.address}` : ""}</span>
             </div>
-          );
-        })
-      )}
+            <button type="button" className="nm-link" onClick={() => setFly([p.lat, p.lng])}>Show on map</button>
+            <a className="nm-link" href={directions(p)} target="_blank" rel="noopener noreferrer">Directions</a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-const s = {
-  stats: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, margin: "0 0 10px" },
-  stat: { display: "flex", flexDirection: "column", gap: 2, padding: 14, borderRadius: 12, background: "#f0fdf4", border: "1px solid #bbf7d0" },
-  big: { fontSize: "1.4rem", color: "#166534" },
-  muted: { color: "#64748b", fontSize: 13 },
-  card: { padding: 14, margin: "0 0 10px", border: "1px solid #e2e8f0", borderRadius: 12, background: "#fff" },
-  row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 },
-  chip: { padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700 },
-  note: { margin: "8px 0 0", padding: "8px 10px", background: "#f8fafc", borderRadius: 8, fontSize: 14 },
-  actions: { display: "flex", gap: 8, marginTop: 10 },
-  secondary: { padding: "7px 16px", border: "2px solid #15803d", borderRadius: 8, background: "#fff", color: "#15803d", fontWeight: 700, cursor: "pointer" },
-  danger: { padding: "7px 16px", border: "2px solid #b91c1c", borderRadius: 8, background: "#fff", color: "#b91c1c", fontWeight: 700, cursor: "pointer" },
-  btn: { display: "inline-block", padding: "9px 20px", borderRadius: 10, background: "#15803d", color: "#fff", fontWeight: 700, textDecoration: "none" },
-  empty: { padding: 24, textAlign: "center", background: "#f8fafc", borderRadius: 12, color: "#64748b" },
-  error: { padding: "8px 12px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", fontSize: 13 },
-};
+const CSS = `
+.nm-wrap { color: #0f172a; }
+.nm-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.nm-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.nm-chip { padding: 8px 16px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 700; cursor: pointer; font: inherit; }
+.nm-chip.on { background: #15803d; border-color: #15803d; color: #fff; }
+.nm-btn { padding: 9px 18px; border-radius: 999px; border: 2px solid #15803d; background: #15803d; color: #fff; font-weight: 700; cursor: pointer; font: inherit; }
+.nm-btn.nm-ghost { background: #fff; color: #15803d; }
+.nm-btn:disabled { opacity: .6; cursor: wait; }
+.nm-chip:focus-visible, .nm-btn:focus-visible, .nm-link:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
+.nm-map { position: relative; height: 420px; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.08); }
+.nm-loading { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 500; padding: 6px 14px; border-radius: 999px; background: #0f172a; color: #fff; font-size: .8rem; }
+.nm-pin-wrap { background: none; border: none; }
+.nm-pin { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,.35); font-size: 17px; }
+.nm-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.nm-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; flex-wrap: wrap; }
+.nm-kind { font-size: 1.4rem; }
+.nm-info { flex: 1; min-width: 180px; display: flex; flex-direction: column; font-size: .9rem; }
+.nm-info span { color: #64748b; font-size: .82rem; }
+.nm-check { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 6px; border-radius: 50%; background: #15803d; color: #fff; font-size: .6rem; }
+.nm-link { background: none; border: none; color: #15803d; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 4px; }
+.nm-error { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: #fee2e2; color: #b91c1c; font-size: .88rem; }
+.nm-empty { color: #64748b; margin: 14px 0 0; }
+.nm-teaser, .nm-box { text-align: center; padding: 48px 24px; border: 1px dashed #bbf7d0; border-radius: 20px; background: #f0fdf4; color: #0f172a; }
+.nm-teaser h3 { margin: 8px 0 6px; font-size: 1.3rem; }
+.nm-teaser p { margin: 0 0 16px; color: #475569; }
+@media (max-width: 640px) { .nm-map { height: 340px; } }
+`;
