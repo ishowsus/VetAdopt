@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMap } from "react-leaflet";
 import { db, auth } from "../firebase";
 import {
   collection, query, where, getDocs, addDoc, onSnapshot,
@@ -28,6 +28,25 @@ const vetIcon = new L.Icon({
 });
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
+const shelterIcon = L.divIcon({
+  className: "vm-shelter-pin-wrap",
+  html: '<span class="vm-shelter-pin">🏠</span>',
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -18],
+});
+
+const googleDirections = (place, from) =>
+  `https://www.google.com/maps/dir/?api=1${from ? `&origin=${from[0]},${from[1]}` : ""}&destination=${place.lat},${place.lng}&travelmode=driving`;
+
+function FitRoute({ coords }) {
+  const map = useMap();
+  useEffect(() => {
+    if (coords?.length > 1) map.fitBounds(L.latLngBounds(coords), { padding: [50, 50] });
+  }, [coords, map]);
+  return null;
+}
+
 const haversine = (lat1, lon1, lat2, lon2) => {
   const R = 6371, d2r = Math.PI / 180;
   const dLat = (lat2 - lat1) * d2r, dLon = (lon2 - lon1) * d2r;
@@ -72,13 +91,23 @@ export default function VetMap() {
 
   const [vets, setVets] = useState([]);
   const [vetsLoading, setVetsLoading] = useState(true);
+  const [shelters, setShelters] = useState([]);
+  const [sheltersLoading, setSheltersLoading] = useState(true);
+  const [placeFilter, setPlaceFilter] = useState("all"); // all | vets | shelters
+  const [hasUserLoc, setHasUserLoc] = useState(false);
+  const [route, setRoute] = useState(null);
+  const [routeLoadingId, setRouteLoadingId] = useState("");
+  const [routeError, setRouteError] = useState("");
   const [bookedTimes, setBookedTimes] = useState([]);
   const [checkingSlots, setCheckingSlots] = useState(false);
 
   // Geolocation
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
-      (p) => setUserLoc([p.coords.latitude, p.coords.longitude]),
+      (p) => {
+        setUserLoc([p.coords.latitude, p.coords.longitude]);
+        setHasUserLoc(true);
+      },
       () => {}
     );
   }, []);
@@ -99,6 +128,20 @@ export default function VetMap() {
       setVetsLoading(false);
     };
     loadVets();
+  }, []);
+
+  // Shelters that have put themselves on the map (they get coordinates when they save their address).
+  useEffect(() => {
+    getDocs(query(collection(db, "users"), where("role", "==", "shelter")))
+      .then((snap) =>
+        setShelters(
+          snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter((s) => typeof s.lat === "number" && typeof s.lng === "number")
+        )
+      )
+      .catch((e) => console.error(e))
+      .finally(() => setSheltersLoading(false));
   }, []);
 
   // Live appointments for the signed-in adopter
@@ -126,6 +169,53 @@ export default function VetMap() {
       .map((v) => ({ ...v, distance: haversine(userLoc[0], userLoc[1], v.lat, v.lng) }))
       .sort((a, b) => a.distance - b.distance);
   }, [vets, search, userLoc, isEmergency, todayName]);
+
+  const filteredShelters = useMemo(
+    () =>
+      shelters
+        .filter((s) => (s.shelterName || s.name || "").toLowerCase().includes(search.toLowerCase()))
+        .map((s) => ({ ...s, distance: haversine(userLoc[0], userLoc[1], s.lat, s.lng) }))
+        .sort((a, b) => a.distance - b.distance),
+    [shelters, search, userLoc]
+  );
+
+  const showVets = placeFilter !== "shelters";
+  const showShelters = !isEmergency && placeFilter !== "vets";
+  const places = [
+    ...(showVets ? filteredVets.map((x) => ({ ...x, kind: "vet" })) : []),
+    ...(showShelters ? filteredShelters.map((x) => ({ ...x, kind: "shelter" })) : []),
+  ].sort((a, b) => a.distance - b.distance);
+  const listLoading = vetsLoading || sheltersLoading;
+
+  // Draws a driving route from the visitor's location. Falls back to a Google Maps link.
+  const showRoute = async (place) => {
+    setRouteError("");
+    if (!hasUserLoc) {
+      setRouteError("Allow location access to see a route from where you are. You can still open Google Maps below.");
+      setRoute({ id: place.id, name: place.clinicName || place.shelterName || place.name, coords: null, place });
+      return;
+    }
+    setRouteLoadingId(place.id);
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${userLoc[1]},${userLoc[0]};${place.lng},${place.lat}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("route");
+      const r = (await res.json()).routes?.[0];
+      if (!r) throw new Error("route");
+      setRoute({
+        id: place.id,
+        name: place.clinicName || place.shelterName || place.name,
+        coords: r.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+        km: r.distance / 1000,
+        min: Math.max(1, Math.round(r.duration / 60)),
+        place,
+      });
+    } catch {
+      setRouteError("We couldn't draw the route here. Open it in Google Maps instead.");
+      setRoute({ id: place.id, name: place.clinicName || place.shelterName || place.name, coords: null, place });
+    }
+    setRouteLoadingId("");
+  };
 
   const openBooking = (vet) => {
     setBookingVet(vet);
@@ -236,6 +326,23 @@ export default function VetMap() {
         }
         .vm-brand { display:flex; align-items:center; gap:10px; }
         .vm-brand-icon { font-size:1.5rem; }
+        .vm-kind-row { display:flex; gap:6px; margin-bottom:10px; }
+        .vm-kind { flex:1; padding:7px 4px; border-radius:999px; border:1px solid #cfe3cf; background:#fff; color:#2e7d32; font-weight:700; font-size:0.78rem; cursor:pointer; font-family:inherit; }
+        .vm-kind.on { background:#2e7d32; border-color:#2e7d32; color:#fff; }
+        .vm-vet-card.shelter { border-left:4px solid #1d4ed8; }
+        .vm-kind-tag { display:inline-block; margin:2px 0 6px; padding:2px 10px; border-radius:999px; background:#dbeafe; color:#1e40af; font-size:0.7rem; font-weight:700; }
+        .vm-shelter-btn { background:#1d4ed8 !important; }
+        .vm-verified { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:6px; border-radius:50%; background:#2e7d32; color:#fff; font-size:0.6rem; vertical-align:middle; }
+        .vm-dir-row { display:flex; gap:8px; margin-top:8px; }
+        .vm-dir-btn { flex:1; text-align:center; padding:8px 6px; border:2px solid #2e7d32; border-radius:10px; background:#fff; color:#2e7d32; font-weight:700; font-size:0.78rem; cursor:pointer; text-decoration:none; font-family:inherit; }
+        .vm-dir-btn:hover { background:#f1f8f1; }
+        .vm-shelter-pin-wrap { background:none; border:none; }
+        .vm-shelter-pin { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:#1d4ed8; border:3px solid #fff; box-shadow:0 3px 10px rgba(0,0,0,.35); font-size:16px; }
+        .vm-route-bar { position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:1000; width:min(560px, calc(100% - 24px)); display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 14px; background:#fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:0.85rem; }
+        .vm-route-sub { color:#607d8b; font-size:0.78rem; margin-top:2px; }
+        .vm-route-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+        .vm-route-actions a { color:#1565c0; font-weight:700; font-size:0.78rem; }
+        .vm-route-actions button { border:none; background:#eceff1; border-radius:8px; padding:6px 12px; font-weight:700; cursor:pointer; font-family:inherit; }
         .vm-back { background:rgba(255,255,255,0.16); color:white; border:1px solid rgba(255,255,255,0.45); border-radius:999px; padding:8px 16px; font-weight:700; font-size:0.85rem; cursor:pointer; font-family:inherit; margin-right:16px; }
         .vm-back:hover { background:rgba(255,255,255,0.28); }
         .vm-back:focus-visible { outline:3px solid #fff; outline-offset:2px; }
@@ -460,9 +567,18 @@ export default function VetMap() {
                   {isEmergency ? "🚨 Emergency Mode Active — Open Today Only" : "🆘 Emergency? Find Vets Open Today"}
                 </button>
                 {!isEmergency && (
+                  <div className="vm-kind-row" role="group" aria-label="Show on map">
+                    {[["all", "All"], ["vets", "🩺 Vets"], ["shelters", "🏠 Shelters"]].map(([k, label]) => (
+                      <button key={k} type="button" aria-pressed={placeFilter === k} className={`vm-kind ${placeFilter === k ? "on" : ""}`} onClick={() => setPlaceFilter(k)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!isEmergency && (
                   <input
                     className="vm-search"
-                    placeholder="🔍  Search clinics…"
+                    placeholder="🔍  Search clinics or shelters…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -470,13 +586,48 @@ export default function VetMap() {
               </div>
 
               <div className="vm-vet-list">
-                {vetsLoading && <div className="vm-no-results">Loading nearby vets…</div>}
-                {!vetsLoading && filteredVets.length === 0 && (
+                {listLoading && <div className="vm-no-results">Loading nearby places…</div>}
+                {!listLoading && places.length === 0 && (
                   <div className="vm-no-results">
-                    {isEmergency ? "No vets with availability today nearby." : "No clinics match your search."}
+                    {isEmergency ? "No vets with availability today nearby." : "Nothing matches your search."}
                   </div>
                 )}
-                {!vetsLoading && filteredVets.map((v, i) => {
+                {!listLoading && places.map((v, i) => {
+                  if (v.kind === "shelter") {
+                    const shelterName = v.shelterName || v.name || "Animal shelter";
+                    return (
+                      <div
+                        key={`s-${v.id}`}
+                        className={`vm-vet-card shelter ${activeVet?.id === v.id ? "active" : ""}`}
+                        style={{ animationDelay: `${i * 60}ms` }}
+                        onClick={() => setActiveVet(v)}
+                      >
+                        <div className="vm-vet-name">🏠 {shelterName}{v.isVerified && <span className="vm-verified" title="Verified" aria-label="Verified">✓</span>}</div>
+                        <span className="vm-kind-tag">Animal shelter</span>
+                        {v.address && <div className="vm-vet-info">📍 {v.address}</div>}
+                        {v.phone && <div className="vm-vet-info">📞 {v.phone}</div>}
+                        <div className="vm-vet-info">📏 {v.distance} km away</div>
+                        <button className="vm-book-btn vm-shelter-btn" onClick={(e) => { e.stopPropagation(); navigate("/adopt"); }}>
+                          See pets and plan a visit
+                        </button>
+                        <MessageButton
+                          toUid={v.id}
+                          me={auth.currentUser}
+                          style={{ marginLeft: 0, marginTop: 8, width: "100%", padding: "9px 14px" }}
+                        >
+                          💬 Message shelter
+                        </MessageButton>
+                        <div className="vm-dir-row">
+                          <button className="vm-dir-btn" onClick={(e) => { e.stopPropagation(); showRoute(v); }}>
+                            {routeLoadingId === v.id ? "Finding route…" : "🧭 Show route"}
+                          </button>
+                          <a className="vm-dir-btn" href={googleDirections(v, hasUserLoc ? userLoc : null)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                            Google Maps
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  }
                   const openLabel = v.workingHours || "Hours not listed";
                   const is24 = openLabel.toLowerCase().includes("24");
                   const tags = v.specialization ? [v.specialization] : [];
@@ -510,6 +661,14 @@ export default function VetMap() {
                       >
                         💬 Message clinic
                       </MessageButton>
+                      <div className="vm-dir-row">
+                        <button className="vm-dir-btn" onClick={(e) => { e.stopPropagation(); showRoute(v); }}>
+                          {routeLoadingId === v.id ? "Finding route…" : "🧭 Show route"}
+                        </button>
+                        <a className="vm-dir-btn" href={googleDirections(v, hasUserLoc ? userLoc : null)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                          Google Maps
+                        </a>
+                      </div>
                     </div>
                   );
                 })}
@@ -517,12 +676,26 @@ export default function VetMap() {
             </aside>
 
             <div className="vm-map-wrap">
+              {route && (
+                <div className="vm-route-bar" role="status">
+                  <div>
+                    <strong>🧭 {route.name}</strong>
+                    <div className="vm-route-sub">
+                      {route.coords ? `${route.km.toFixed(1)} km · about ${route.min} min by car` : routeError}
+                    </div>
+                  </div>
+                  <div className="vm-route-actions">
+                    <a href={googleDirections(route.place, hasUserLoc ? userLoc : null)} target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+                    <button type="button" onClick={() => { setRoute(null); setRouteError(""); }}>Clear</button>
+                  </div>
+                </div>
+              )}
               <MapContainer center={userLoc} zoom={14} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution="© OpenStreetMap contributors"
                 />
-                {filteredVets.map((v) => (
+                {showVets && filteredVets.map((v) => (
                   <Marker key={v.id} position={[v.lat, v.lng]} icon={vetIcon} eventHandlers={{ click: () => setActiveVet(v) }}>
                     <Popup>
                       <div>
@@ -545,10 +718,52 @@ export default function VetMap() {
                         >
                           💬 Message
                         </MessageButton>
+                        <div style={{ marginTop: 8 }}>
+                          <a href={googleDirections(v, hasUserLoc ? userLoc : null)} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.78rem", fontWeight: 700 }}>🧭 Directions</a>
+                          {" · "}
+                          <a href="#!" onClick={(e) => { e.preventDefault(); showRoute(v); }} style={{ fontSize: "0.78rem", fontWeight: 700 }}>Show route</a>
+                        </div>
                       </div>
                     </Popup>
                   </Marker>
                 ))}
+
+                {showShelters && filteredShelters.map((s) => (
+                  <Marker key={`s-${s.id}`} position={[s.lat, s.lng]} icon={shelterIcon} title={s.shelterName || s.name} eventHandlers={{ click: () => setActiveVet(s) }}>
+                    <Popup>
+                      <div>
+                        <strong style={{ color: "#1d4ed8", fontFamily: "'Sora',sans-serif" }}>
+                          {s.shelterName || s.name || "Animal shelter"}{s.isVerified && " ✓"}
+                        </strong>
+                        <p style={{ fontSize: "0.78rem", color: "#666", margin: "4px 0 8px" }}>
+                          Animal shelter{s.address && <><br />{s.address}</>}
+                        </p>
+                        <button
+                          onClick={() => navigate("/adopt")}
+                          style={{ background: "#1d4ed8", color: "white", border: "none", padding: "7px 14px", borderRadius: "8px", cursor: "pointer", fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: "0.78rem" }}
+                        >
+                          See pets
+                        </button>
+                        <MessageButton toUid={s.id} me={auth.currentUser} style={{ marginLeft: 8, display: "inline-block", padding: "6px 14px" }}>
+                          💬 Message
+                        </MessageButton>
+                        <div style={{ marginTop: 8 }}>
+                          <a href={googleDirections(s, hasUserLoc ? userLoc : null)} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.78rem", fontWeight: 700 }}>🧭 Directions</a>
+                          {" · "}
+                          <a href="#!" onClick={(e) => { e.preventDefault(); showRoute(s); }} style={{ fontSize: "0.78rem", fontWeight: 700 }}>Show route</a>
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+
+                {hasUserLoc && <CircleMarker center={userLoc} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} />}
+                {route?.coords && (
+                  <>
+                    <Polyline positions={route.coords} pathOptions={{ color: "#2e7d32", weight: 5, opacity: 0.85 }} />
+                    <FitRoute coords={route.coords} />
+                  </>
+                )}
                 {activeVet && <MapFlyTo center={[activeVet.lat, activeVet.lng]} />}
               </MapContainer>
             </div>

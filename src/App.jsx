@@ -2,7 +2,8 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import AiChat from "./components/AiChat";
+import EnhancedChatbot from "./components/EnhancedChatbot";
+import MessageNotifier from "./components/MessageNotifier";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -29,7 +30,7 @@ import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import Verifications from "./pages/admin/Verifications";
 import Listings from "./pages/admin/Listings";
-import AdoptionListings from "./pages/admin/AdoptionListings";
+
 // Vet Pages & Layout
 import VetLayout from "./layouts/VetLayout";
 import VetDashboard from "./pages/Veterinarian/VetDashboard";
@@ -241,7 +242,6 @@ function App() {
               <Route path="settings" element={<Settings />} />
               <Route path="verifications" element={<Verifications />} />
               <Route path="listings" element={<Listings />} />
-              <Route path="adoption-listings" element={<AdoptionListings />} />
               <Route
                 path="*"
                 element={
@@ -317,7 +317,8 @@ function App() {
         </main>
       </div>
 
-      <AiChat user={user} />
+      <MessageNotifier user={user} />
+      <EnhancedChatbot user={user} />
     </div>
   );
 }

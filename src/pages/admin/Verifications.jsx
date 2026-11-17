@@ -16,7 +16,7 @@ import { VerificationBadge } from "../../components/shared/VerificationPanel";
 const FILTERS = [
   { key: "pending", label: "Pending" },
   { key: "verified", label: "Approved" },
-  { key: "rejected", label: "Rejected" },
+  { key: "rejected", label: "Declined" },
 ];
 
 const fmt = (ts) =>
@@ -30,6 +30,19 @@ export default function Verifications() {
   const [error, setError] = useState("");
   const [notes, setNotes] = useState({});
   const [busyId, setBusyId] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Live count for the "Pending" tab, whichever tab is open.
+  useEffect(
+    () =>
+      onSnapshot(
+        query(collection(db, "verifications"), where("status", "==", "pending")),
+        (s) => setPendingCount(s.size),
+        () => {}
+      ),
+    []
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -69,6 +82,9 @@ export default function Verifications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
+  const roleOf = (r) => (String(r || "").toLowerCase() === "veterinarian" ? "vet" : String(r || "").toLowerCase());
+  const visible = items.filter((i) => roleFilter === "all" || roleOf(i.role) === roleFilter);
+
   const viewDocument = async (item) => {
     const w = window.open("about:blank", "_blank"); // open first so popup blockers allow it
     try {
@@ -84,7 +100,7 @@ export default function Verifications() {
   const decide = async (item, status) => {
     const note = (notes[item.id] || "").trim();
     if (status === "rejected" && !note) {
-      setError("Add a reason before rejecting so the applicant knows what to fix.");
+      setError("Add a reason before declining so the applicant knows what to fix.");
       return;
     }
     setBusyId(item.id);
@@ -101,6 +117,17 @@ export default function Verifications() {
       });
       // Mirror onto the user doc so maps and lists can show the badge cheaply.
       batch.set(doc(db, "users", item.id), { isVerified: status === "verified" }, { merge: true });
+      // Tell the applicant, so they don't have to keep checking.
+      batch.set(doc(collection(db, "notifications")), {
+        userId: item.id,
+        text:
+          status === "verified"
+            ? "✅ Your verification was approved. A verified badge now shows on your profile."
+            : `Your verification was declined. Reason: ${note}. You can fix it and submit again from your profile.`,
+        type: "verification",
+        createdAt: serverTimestamp(),
+        read: false,
+      });
       await batch.commit();
       if (item.role === "adopter" && item.documentPath) deleteObject(ref(storage, item.documentPath)).catch(() => {});
     } catch (err) {
@@ -114,7 +141,7 @@ export default function Verifications() {
     <div style={{ padding: 30, maxWidth: 900, margin: "0 auto" }}>
       <h2 style={{ margin: "0 0 4px" }}>Verification requests</h2>
       <p style={{ margin: "0 0 20px", color: "#607d8b", fontSize: 14 }}>
-        Review licenses and registration papers from vets and shelters.
+        Review vet licenses, shelter registrations and adopter IDs. Approving shows a verified badge; declining needs a reason so they can fix it.
       </p>
 
       <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 18 }}>
@@ -135,6 +162,19 @@ export default function Verifications() {
             }}
           >
             {f.label}
+            {f.key === "pending" && pendingCount > 0 && (
+              <span style={{ marginLeft: 8, padding: "1px 8px", borderRadius: 999, background: filter === "pending" ? "#fff" : "#dc2626", color: filter === "pending" ? "#2e7d32" : "#fff", fontSize: 12, fontWeight: 700 }}>
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div role="group" aria-label="Filter by account type" style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+        {[["all", "Everyone"], ["vet", "Vets"], ["shelter", "Shelters"], ["adopter", "Adopters"]].map(([k, label]) => (
+          <button key={k} type="button" aria-pressed={roleFilter === k} onClick={() => setRoleFilter(k)} style={{ padding: "5px 14px", borderRadius: 999, border: "1px solid #cfd8dc", background: roleFilter === k ? "#37474f" : "#fff", color: roleFilter === k ? "#fff" : "#37474f", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            {label}
           </button>
         ))}
       </div>
@@ -147,10 +187,10 @@ export default function Verifications() {
 
       {loading ? (
         <p>Loading…</p>
-      ) : items.length === 0 ? (
+      ) : visible.length === 0 ? (
         <p style={{ color: "#90a4ae" }}>Nothing here right now.</p>
       ) : (
-        items.map((item) => {
+        visible.map((item) => {
           const p = people[item.id] || {};
           return (
             <div key={item.id} style={{ background: "#fff", borderRadius: 14, padding: 18, marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,.07)", borderLeft: "5px solid #2e7d32" }}>
@@ -193,8 +233,8 @@ export default function Verifications() {
               {item.status === "pending" && (
                 <>
                   <input
-                    aria-label="Reason for rejection"
-                    placeholder="Reason (required if rejecting)"
+                    aria-label="Reason for declining"
+                    placeholder="Reason (required if declining)"
                     value={notes[item.id] || ""}
                     onChange={(e) => setNotes((n) => ({ ...n, [item.id]: e.target.value }))}
                     style={{ width: "100%", padding: "10px 12px", border: "1px solid #cfd8dc", borderRadius: 8, boxSizing: "border-box", marginBottom: 10 }}
@@ -204,7 +244,7 @@ export default function Verifications() {
                       Approve
                     </button>
                     <button type="button" disabled={busyId === item.id} onClick={() => decide(item, "rejected")} style={{ padding: "10px 18px", background: "#fff", color: "#b91c1c", border: "2px solid #b91c1c", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>
-                      Reject
+                      Decline
                     </button>
                   </div>
                 </>
