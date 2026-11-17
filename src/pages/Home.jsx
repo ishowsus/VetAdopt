@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import NearbyMap from "../components/NearbyMap";
 
 const PETS = [
   { id: 1, name: "Max", type: "Labrador Retriever", age: "2 years", desc: "Fully vaccinated, neutered, and friendly. Max loves long walks and is eager to find an active family.", img: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800", badge: "Dogs", healthScore: "100% Vetted" },
@@ -479,6 +480,16 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
+      {/* ── NEARBY MAP ── */}
+      <section className="va-pets" id="nearby">
+        <div className="va-sec-head">
+          <span className="va-eyebrow">Care Near You</span>
+          <h2>Find vets and shelters nearby</h2>
+          <p>See clinics and partner shelters on the map, get directions, and book a vet or plan a visit.</p>
+        </div>
+        <NearbyMap />
+      </section>
+
       <section className="va-how" id="how">
         <div className="va-sec-head va-reveal">
           <span className="va-eyebrow" style={{ color: "#81c784" }}>The Process</span>

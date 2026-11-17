@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "../firebase";
+
+const API_URL = import.meta.env?.VITE_API_URL || "http://localhost:5000";
 
 const SUGGESTED = [100, 250, 500, 1000, 2500];
 
@@ -23,7 +29,39 @@ export default function DonateEWallet() {
     amount: "",
     wallet: "gcash",
     message: "",
+    shelterId: new URLSearchParams(window.location.search).get("shelter") || "",
   });
+  const [shelters, setShelters] = useState([]);
+  const [sheltersLoading, setSheltersLoading] = useState(true);
+
+  // Prefill the donor's name and email from their account.
+  useEffect(
+    () =>
+      onAuthStateChanged(auth, (u) => {
+        if (!u) return;
+        setForm((f) => ({ ...f, name: f.name || u.displayName || "", email: f.email || u.email || "" }));
+      }),
+    []
+  );
+
+  // Shelters people can donate to.
+  useEffect(() => {
+    let alive = true;
+    getDocs(query(collection(db, "users"), where("role", "in", ["shelter", "Shelter"])))
+      .then((snap) => {
+        if (!alive) return;
+        setShelters(
+          snap.docs
+            .map((x) => ({ id: x.id, name: x.data().shelterName || x.data().name || "Animal shelter", verified: x.data().isVerified === true }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        );
+      })
+      .catch((e) => console.error(e))
+      .finally(() => alive && setSheltersLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("idle"); // idle | processing | error
@@ -35,6 +73,7 @@ export default function DonateEWallet() {
 
   const validate = () => {
     const e = {};
+    if (!form.shelterId) e.shelterId = "Please choose a shelter to support.";
     if (!form.name.trim()) e.name = "Full name is required.";
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email))
       e.email = "Valid email is required.";
@@ -48,15 +87,43 @@ export default function DonateEWallet() {
     e.preventDefault();
     if (!validate()) return;
 
+    const user = auth.currentUser;
+    if (!user) {
+      setErrorMsg("Please log in to donate.");
+      setStatus("error");
+      return;
+    }
+    const shelter = shelters.find((s) => s.id === form.shelterId);
+    const walletName = WALLETS.find((w) => w.id === form.wallet)?.name || form.wallet;
+
     setStatus("processing");
     setErrorMsg("");
 
+    let donationId = null;
     try {
-      // Send selected wallet type and donation details to backend
-      const res = await fetch("http://localhost:5000/create-ewallet-checkout", {
+      // Record the donation first as "Pending". The shelter confirms it once the money arrives.
+      const ref = await addDoc(collection(db, "donations"), {
+        donorId: user.uid,
+        donorName: form.name.trim(),
+        shelterId: shelter.id,
+        shelterName: shelter.name,
+        amount: Number(form.amount),
+        purpose: "General Support",
+        paymentMethod: walletName,
+        ...(form.message.trim() ? { message: form.message.trim().slice(0, 300) } : {}),
+        date: new Date().toISOString().split("T")[0],
+        status: "Pending",
+        source: "online",
+        createdAt: serverTimestamp(),
+      });
+      donationId = ref.id;
+
+      const res = await fetch(`${API_URL}/create-ewallet-checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          donationId,
+          shelterId: shelter.id,
           amount: Number(form.amount),
           paymentMethod: form.wallet,
           name: form.name,
@@ -71,6 +138,10 @@ export default function DonateEWallet() {
       // Redirect user to GCash / Maya login or QR page
       window.location.href = redirectUrl;
     } catch (err) {
+      // The payment never started, so don't leave a "Pending" record behind.
+      if (donationId) {
+        updateDoc(doc(db, "donations", donationId), { status: "Cancelled", updatedAt: serverTimestamp() }).catch(() => {});
+      }
       setErrorMsg(err.message || "Something went wrong.");
       setStatus("error");
     }
@@ -157,6 +228,8 @@ export default function DonateEWallet() {
         .dn-textarea { resize: vertical; min-height: 80px; }
         .dn-err { font-size: 0.75rem; color: #c62828; margin-top: 5px; font-weight: 600; }
         .dn-divider { border: none; border-top: 1px solid #eef4ee; margin: 20px 0; }
+        .dn-error-box { background:#fdecea; color:#b3261e; border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:0.88rem; font-weight:600; }
+        .dn-history-link { color:#2e7d32; font-weight:800; }
         .dn-secure { font-size: 0.72rem; color: #9aaa9a; margin-top: 8px; font-weight: 600; text-align: center; }
 
         /* Button */
@@ -191,8 +264,25 @@ export default function DonateEWallet() {
 
         <div className="dn-form-card">
           <form onSubmit={handleSubmit} noValidate>
+            {/* Shelter */}
+            <div className="dn-label">1. Choose a Shelter</div>
+            <div className="dn-field">
+              <select
+                className={`dn-input${errors.shelterId ? " err" : ""}`}
+                aria-label="Shelter to support"
+                value={form.shelterId}
+                onChange={set("shelterId")}
+              >
+                <option value="">{sheltersLoading ? "Loading shelters…" : "Select a shelter"}</option>
+                {shelters.map((s) => (
+                  <option key={s.id} value={s.id}>{s.verified ? "✓ " : ""}{s.name}</option>
+                ))}
+              </select>
+              {errors.shelterId && <p className="dn-err">{errors.shelterId}</p>}
+            </div>
+
             {/* Amount Selection */}
-            <div className="dn-label">1. Choose Amount</div>
+            <div className="dn-label">2. Choose Amount</div>
             <div className="dn-amounts">
               {SUGGESTED.map((amt) => (
                 <button
@@ -240,7 +330,7 @@ export default function DonateEWallet() {
             <div className="dn-divider" />
 
             {/* E-Wallet Selection */}
-            <div className="dn-label">2. Select E-Wallet / Payment Method</div>
+            <div className="dn-label">3. Select E-Wallet / Payment Method</div>
             <div className="dn-wallets">
               {WALLETS.map((w) => (
                 <div
@@ -262,7 +352,7 @@ export default function DonateEWallet() {
             <div className="dn-divider" />
 
             {/* Donor Information */}
-            <div className="dn-label">3. Donor Details</div>
+            <div className="dn-label">4. Donor Details</div>
             <div className="dn-row">
               <div className="dn-field">
                 <input
@@ -317,7 +407,11 @@ export default function DonateEWallet() {
             </button>
 
             <p className="dn-secure">
-              📲 You will be redirected to complete your payment securely.
+              📲 You will be redirected to complete your payment securely. Your donation shows as
+              pending until the shelter confirms it.
+            </p>
+            <p className="dn-secure">
+              <Link className="dn-history-link" to="/profile?tab=donations">View my donation history</Link>
             </p>
           </form>
         </div>

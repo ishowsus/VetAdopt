@@ -29,7 +29,7 @@ export const conversationIdFor = (a, b) => [a, b].sort().join("_");
 /* ───────────── Images ───────────── */
 
 // Shrinks a photo to at most 1280px on the long side and re-encodes it as JPEG.
-async function resizeImage(file) {
+export async function resizeImage(file) {
   let bitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });

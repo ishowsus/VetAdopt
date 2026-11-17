@@ -10,7 +10,7 @@ import {
   writeBatch,
   serverTimestamp,
 } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
+import { ref, getDownloadURL, deleteObject } from "firebase/storage";
 import { VerificationBadge } from "../../components/shared/VerificationPanel";
 
 const FILTERS = [
@@ -96,10 +96,13 @@ export default function Verifications() {
         reviewNote: status === "rejected" ? note : "",
         reviewedAt: serverTimestamp(),
         reviewedBy: auth.currentUser.uid,
+        // ID photos are deleted once reviewed; only the decision is kept.
+        ...(item.role === "adopter" ? { documentPath: "", documentName: "ID deleted after review" } : {}),
       });
       // Mirror onto the user doc so maps and lists can show the badge cheaply.
       batch.set(doc(db, "users", item.id), { isVerified: status === "verified" }, { merge: true });
       await batch.commit();
+      if (item.role === "adopter" && item.documentPath) deleteObject(ref(storage, item.documentPath)).catch(() => {});
     } catch (err) {
       console.error(err);
       setError("Couldn't save that decision. Check your Firestore rules allow admins to write.");
@@ -161,15 +164,23 @@ export default function Verifications() {
               </div>
 
               <dl style={{ margin: "12px 0", fontSize: 14, display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 14px" }}>
-                <dt style={{ color: "#607d8b" }}>{item.role === "vet" ? "License no." : "Registration no."}</dt>
-                <dd style={{ margin: 0 }}>{item.idNumber || "—"}</dd>
+                {item.role !== "adopter" && (
+                  <>
+                    <dt style={{ color: "#607d8b" }}>{item.role === "vet" ? "License no." : "Registration no."}</dt>
+                    <dd style={{ margin: 0 }}>{item.idNumber || "—"}</dd>
+                  </>
+                )}
                 <dt style={{ color: "#607d8b" }}>Submitted</dt>
                 <dd style={{ margin: 0 }}>{fmt(item.submittedAt) || "—"}</dd>
                 <dt style={{ color: "#607d8b" }}>File</dt>
                 <dd style={{ margin: 0 }}>
-                  <button type="button" onClick={() => viewDocument(item)} style={{ background: "none", border: "none", color: "#1565c0", cursor: "pointer", padding: 0, textDecoration: "underline", fontSize: 14 }}>
-                    {item.documentName || "Open document"}
-                  </button>
+                  {item.documentPath ? (
+                    <button type="button" onClick={() => viewDocument(item)} style={{ background: "none", border: "none", color: "#1565c0", cursor: "pointer", padding: 0, textDecoration: "underline", fontSize: 14 }}>
+                      {item.documentName || "Open document"}
+                    </button>
+                  ) : (
+                    <span style={{ color: "#607d8b" }}>{item.documentName || "No file"}</span>
+                  )}
                 </dd>
                 {item.reviewNote && (
                   <>

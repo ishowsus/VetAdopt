@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, cloneElement } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { db, auth } from "../firebase";
 import {
@@ -23,7 +23,9 @@ import {
 } from "firebase/auth";
 
 import MessageButton from "../components/MessageButton";
+import BookingPanel from "../components/BookingPanel";
 import { postApplicationUpdate } from "../utils/chat";
+import { EMPTY_SCREENING, OPTIONS, validateScreening, cleanScreening } from "../utils/screening";
 
 const PAGE_SIZE = 9;
 
@@ -148,6 +150,8 @@ const EmbeddedStyles = () => (
     }
     .reset-btn:hover { background: #f1f5f9; color: #0f172a; }
     .ad-controls { display: flex; gap: 16px; margin-bottom: 24px; }
+    .ad-post-btn { display: inline-flex; align-items: center; padding: 0 18px; min-height: 42px; border-radius: 10px; background: #15803d; color: #fff; font-weight: 700; font-size: 0.9rem; text-decoration: none; white-space: nowrap; }
+    .ad-post-btn:hover { background: #166534; }
     .ad-search-wrap { position: relative; flex: 1; }
     .ad-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); }
     .ad-search { width: 100%; padding: 12px 14px 12px 40px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.95rem; outline: none; }
@@ -226,6 +230,8 @@ const EmbeddedStyles = () => (
     .pc2-poster { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
     .pc2-poster-label { font-size: 0.75rem; font-weight: 500; color: #64748b; }
     .pc2-poster .pc2-by { margin-bottom: 0; }
+    .pc2-visit { margin-left: 8px; padding: 6px 14px; border: 2px solid #15803d; border-radius: 999px; background: #15803d; color: #fff; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+    .pc2-visit:hover { background: #166534; }
     .pc2-poster .pc2-by-name { color: #0f172a; font-size: 0.9rem; }
     .pc2-poster .pc2-by-img { border-color: #e2e8f0; }
 
@@ -253,6 +259,11 @@ const EmbeddedStyles = () => (
 
     /* ---------- Inline form inside the expanded card ---------- */
     .pc2-form-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin: 4px 0 12px 0; }
+    .pc2-form-title.ad-section { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+    .ad-section-sub { margin: -6px 0 14px; font-size: 0.82rem; color: #64748b; }
+    select.ad-input { background: #fff; }
+    .ad-check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.88rem; color: #334155; cursor: pointer; line-height: 1.4; }
+    .ad-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: #16a34a; flex-shrink: 0; }
     .ad-field { margin-bottom: 12px; }
     .ad-field .ad-label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: #334155; }
     .ad-err { display: none; color: #dc2626; font-size: 0.78rem; margin-top: 4px; }
@@ -469,8 +480,9 @@ const EMPTY_CONTACT = {
 };
 
 function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, onRequireAuth, onSubmit }) {
-  const [step, setStep] = useState("details"); // details | form | success
+  const [step, setStep] = useState("details"); // details | form | book | success
   const [contact, setContact] = useState(EMPTY_CONTACT);
+  const [screening, setScreening] = useState(EMPTY_SCREENING);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -512,7 +524,7 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
       errs.phone = "Enter a valid phone number.";
     if (contact.reason.trim().length < 10)
       errs.reason = "Tell us a little more (at least 10 characters).";
-    return errs;
+    return { ...errs, ...validateScreening(screening) };
   };
 
   const handleSubmit = async () => {
@@ -523,7 +535,7 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
 
     setSubmitting(true);
     try {
-      await onSubmit(pet, contact);
+      await onSubmit(pet, contact, cleanScreening(screening));
       setStep("success");
     } catch (err) {
       setSubmitError(err.message || "Something went wrong. Please try again.");
@@ -536,6 +548,36 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
     <div className={`ad-field ${errors[key] ? "bad" : ""}`}>
       <label className="ad-label" htmlFor={`f-${key}`}>{label}</label>
       {cloneElement(input, { id: `f-${key}` })}
+      <p className="ad-err">{errors[key]}</p>
+    </div>
+  );
+
+  const selectField = (key, label, options) =>
+    field(
+      key,
+      label,
+      <select
+        className="ad-input"
+        value={screening[key]}
+        onChange={(e) => setScreening({ ...screening, [key]: e.target.value })}
+      >
+        <option value="">Choose…</option>
+        {options.map(([v, l]) => (
+          <option key={v} value={v}>{l}</option>
+        ))}
+      </select>
+    );
+
+  const checkField = (key, label) => (
+    <div className={`ad-field ${errors[key] ? "bad" : ""}`}>
+      <label className="ad-check">
+        <input
+          type="checkbox"
+          checked={screening[key]}
+          onChange={(e) => setScreening({ ...screening, [key]: e.target.checked })}
+        />
+        <span>{label}</span>
+      </label>
       <p className="ad-err">{errors[key]}</p>
     </div>
   );
@@ -598,14 +640,27 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
               <div className="pc2-poster">
                 <span className="pc2-poster-label">Posted by</span>
                 <PosterChip poster={poster} role={pet.postedByRole} size={32} />
-                {String(pet.postedByRole || "").toLowerCase() === "shelter" && (
-                  <MessageButton
-                    toUid={posterIdOf(pet)}
-                    me={user}
-                    petId={pet.id}
-                    petName={pet.name}
-                    onRequireAuth={onRequireAuth}
-                  />
+                {posterIdOf(pet) && (
+                  <>
+                    <MessageButton
+                      toUid={posterIdOf(pet)}
+                      me={user}
+                      petId={pet.id}
+                      petName={pet.name}
+                      onRequireAuth={onRequireAuth}
+                    >
+                      {String(pet.postedByRole || "").toLowerCase() === "shelter" ? "💬 Message" : "💬 Message owner"}
+                    </MessageButton>
+                    {String(pet.postedByRole || "").toLowerCase() === "shelter" && user?.uid !== posterIdOf(pet) && (
+                      <button
+                        type="button"
+                        className="pc2-visit"
+                        onClick={() => (user ? setStep("book") : onRequireAuth())}
+                      >
+                        📅 Visit
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -647,6 +702,12 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
                     <div className="ad-note">
                       You've already applied for {pet.name} — submitting again won't speed
                       things up.
+                    </div>
+                  )}
+                  {user && !user.emailVerified && (
+                    <div className="ad-note">
+                      Please verify your email before applying. It helps shelters trust applicants and keeps pets safe.{" "}
+                      <a href="/profile">Verify now</a>
                     </div>
                   )}
                   <h4 className="pc2-form-title">Adoption application</h4>
@@ -700,6 +761,47 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
                     />
                   )}
 
+                  <h4 className="pc2-form-title ad-section">Making sure {pet.name} is safe and cared for</h4>
+                  <p className="ad-section-sub">
+                    Shelters use these answers to find the right home. Honest answers help, and nothing here is judged on its own.
+                  </p>
+
+                  {selectField("housing", "Where do you live?", OPTIONS.housing)}
+                  {screening.housing === "rent" && selectField("landlord", "Does your landlord allow pets?", OPTIONS.landlord)}
+                  {selectField("householdAgrees", "Does everyone at home agree to adopt?", OPTIONS.householdAgrees)}
+                  {selectField("hoursAlone", `How long would ${pet.name} be home alone on a typical day?`, OPTIONS.hoursAlone)}
+                  {selectField("petStays", `Where would ${pet.name} stay most of the day?`, OPTIONS.petStays)}
+                  {selectField("experience", "Your experience with pets", OPTIONS.experience)}
+                  {selectField("vetCosts", "Can you cover food, vaccines and vet emergencies?", OPTIONS.vetCosts)}
+                  {selectField("previousPets", "Pets in your past", OPTIONS.previousPets)}
+                  {screening.previousPets === "gave_up" &&
+                    field(
+                      "previousPetsNote",
+                      "What happened?",
+                      <textarea
+                        className="ad-input"
+                        rows={2}
+                        maxLength={300}
+                        value={screening.previousPetsNote}
+                        onChange={(e) => setScreening({ ...screening, previousPetsNote: e.target.value })}
+                      />
+                    )}
+                  {field(
+                    "vetReference",
+                    "Your vet's clinic name (optional)",
+                    <input
+                      className="ad-input"
+                      maxLength={120}
+                      placeholder="Helps the shelter confirm past pet care"
+                      value={screening.vetReference}
+                      onChange={(e) => setScreening({ ...screening, vetReference: e.target.value })}
+                    />
+                  )}
+
+                  {checkField("agreeCare", "I will provide food, shelter, vaccinations and vet care, and will never neglect or harm the pet.")}
+                  {checkField("agreeCheckIns", "I agree to follow-up check-ins after adoption (photos or a home visit).")}
+                  {checkField("agreeReturn", "If I can no longer keep the pet, I will return it to the shelter, not sell, abandon or give it away.")}
+
                   {submitError && <p className="ad-error">⚠️ {submitError}</p>}
 
                   <div className="pc2-foot">
@@ -716,6 +818,14 @@ function ExpandedPetPanel({ pet, poster, user, applied, authVersion, onClose, on
                     </button>
                   </div>
                 </>
+              )}
+
+              {step === "book" && (
+                <BookingPanel
+                  providerId={posterIdOf(pet)}
+                  pet={{ id: pet.id, name: pet.name }}
+                  onBack={() => setStep("details")}
+                />
               )}
             </>
           )}
@@ -1087,8 +1197,21 @@ export default function Adopt() {
     return counts;
   }, [pets]);
 
-  const handleApplicationSubmit = async (pet, contact) => {
+  const handleApplicationSubmit = async (pet, contact, screening) => {
     if (!user) throw new Error("You must be logged in to submit an application.");
+
+    // Applications need a verified email (also enforced by the database rules).
+    await user.reload();
+    if (!user.emailVerified) {
+      throw new Error("Please verify your email first. You can do it from your profile page.");
+    }
+    await user.getIdToken(true); // so the rules see the verified flag right away
+
+    // Accounts an admin has put on hold can't apply.
+    const meSnap = await getDoc(doc(db, "users", user.uid));
+    if (meSnap.exists() && meSnap.data().adoptionHold) {
+      throw new Error("Your account can't submit adoption applications right now. Please contact support.");
+    }
 
     // Final server-side duplicate check (race-safe), then the batch write.
     const dupSnap = await getDocs(
@@ -1118,6 +1241,7 @@ export default function Adopt() {
       phone: contact.phone.trim(),
       email: user.email,
       reason: contact.reason.trim(),
+      screening,
       status: "Pending",
       createdAt: serverTimestamp(),
     });
@@ -1275,6 +1399,7 @@ export default function Adopt() {
               Filters
             </button>
 
+            <Link to="/post-pet" className="ad-post-btn">+ Rehome a pet</Link>
             <select className="ad-sort" aria-label="Sort pets" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="newest">Newest</option>
               <option value="name">Name (A-Z)</option>

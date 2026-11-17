@@ -382,7 +382,7 @@ export default function Messages() {
       console.error(err);
       setError(
         err.code === "permission-denied"
-          ? "You can't message this person. Adopters can message vets and shelters."
+          ? "You can't message this person. You can message vets, shelters, and the owner of a pet you're asking about."
           : err.message || "Message not sent. Try again."
       );
     }
@@ -534,6 +534,10 @@ export default function Messages() {
                 <span className="ms-pet-status">{petInfo.badge || petInfo.status || "Available"}</span>
               </Link>
             )}
+
+            <p className="ms-safety">
+              🔒 Stay safe: never send money or deposits before meeting the pet in person, and meet in a public place.
+            </p>
 
             {reportOpen && (
               <div className="ms-report">
@@ -732,6 +736,7 @@ const CSS = `
 .ms-pet-main span { color: var(--muted); font-size: .78rem; }
 .ms-pet-status { padding: 3px 10px; border-radius: 999px; background: #dcfce7; color: var(--green-dark); font-size: .72rem; font-weight: 700; }
 
+.ms-safety { margin: 0; padding: 8px 16px; background: #fffbeb; border-bottom: 1px solid #fde68a; color: #92400e; font-size: .78rem; flex-shrink: 0; }
 .ms-report { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; background: #fffbeb; border-bottom: 1px solid #fde68a; font-size: .86rem; flex-shrink: 0; }
 .ms-report textarea { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; resize: vertical; }
 .ms-report-actions { display: flex; gap: 8px; justify-content: flex-end; }

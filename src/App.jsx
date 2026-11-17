@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { useEffect, useRef, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import EnhancedChatbot from "./components/EnhancedChatbot";
+import AiChat from "./components/AiChat";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -15,6 +15,7 @@ import VetMap from "./pages/VetMap";
 import ProfileSettings from "./pages/ProfileSettings";
 import PetMatchmaker from "./pages/PetMatchmaker";
 import Messages from "./pages/Messages";
+import PostPet from "./pages/PostPet";
 
 // Admin Context & Layout
 import { AdminProvider } from "./layouts/AdminContext";
@@ -27,7 +28,8 @@ import Users from "./pages/admin/Users";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import Verifications from "./pages/admin/Verifications";
-
+import Listings from "./pages/admin/Listings";
+import AdoptionListings from "./pages/admin/AdoptionListings";
 // Vet Pages & Layout
 import VetLayout from "./layouts/VetLayout";
 import VetDashboard from "./pages/Veterinarian/VetDashboard";
@@ -218,6 +220,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute user={user}><ProfileSettings /></ProtectedRoute>} />
             <Route path="/donate" element={<ProtectedRoute user={user}><Donate /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute user={user}><Messages /></ProtectedRoute>} />
+            <Route path="/post-pet" element={<ProtectedRoute user={user}><PostPet /></ProtectedRoute>} />
 
             {/* Admin Routes */}
             <Route
@@ -237,6 +240,8 @@ function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
               <Route path="verifications" element={<Verifications />} />
+              <Route path="listings" element={<Listings />} />
+              <Route path="adoption-listings" element={<AdoptionListings />} />
               <Route
                 path="*"
                 element={
@@ -312,7 +317,7 @@ function App() {
         </main>
       </div>
 
-      <EnhancedChatbot user={user} />
+      <AiChat user={user} />
     </div>
   );
 }

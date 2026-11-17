@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { db, auth } from "../firebase";
 import {
@@ -7,6 +8,7 @@ import {
 } from "firebase/firestore";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import MessageButton from "../components/MessageButton";
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 const SERVICES = ["General Checkup", "Vaccination", "Surgery", "Grooming", "Dental Care", "Emergency"];
@@ -55,6 +57,7 @@ function MapFlyTo({ center }) {
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function VetMap() {
+  const navigate = useNavigate();
   const [view, setView] = useState("map");
   const [search, setSearch] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
@@ -233,6 +236,9 @@ export default function VetMap() {
         }
         .vm-brand { display:flex; align-items:center; gap:10px; }
         .vm-brand-icon { font-size:1.5rem; }
+        .vm-back { background:rgba(255,255,255,0.16); color:white; border:1px solid rgba(255,255,255,0.45); border-radius:999px; padding:8px 16px; font-weight:700; font-size:0.85rem; cursor:pointer; font-family:inherit; margin-right:16px; }
+        .vm-back:hover { background:rgba(255,255,255,0.28); }
+        .vm-back:focus-visible { outline:3px solid #fff; outline-offset:2px; }
         .vm-brand-text { font-family:'DM Serif Display',serif; font-size:1.2rem; color:white; letter-spacing:-0.3px; }
         .vm-brand-sub { font-size:0.65rem; color:rgba(255,255,255,0.6); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
 
@@ -410,6 +416,14 @@ export default function VetMap() {
 
       {/* ── Topbar ── */}
       <header className="vm-topbar">
+        <button
+          type="button"
+          className="vm-back"
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/adopt"))}
+          aria-label="Go back"
+        >
+          ← Back
+        </button>
         <div className="vm-brand">
           <span className="vm-brand-icon"></span>
           <div>
@@ -489,6 +503,13 @@ export default function VetMap() {
                       <button className="vm-book-btn" onClick={(e) => { e.stopPropagation(); openBooking(v); }}>
                         Book Appointment
                       </button>
+                      <MessageButton
+                        toUid={v.id}
+                        me={auth.currentUser}
+                        style={{ marginLeft: 0, marginTop: 8, width: "100%", padding: "9px 14px" }}
+                      >
+                        💬 Message clinic
+                      </MessageButton>
                     </div>
                   );
                 })}
@@ -517,6 +538,13 @@ export default function VetMap() {
                         >
                           Book Now
                         </button>
+                        <MessageButton
+                          toUid={v.id}
+                          me={auth.currentUser}
+                          style={{ marginLeft: 8, display: "inline-block", padding: "6px 14px" }}
+                        >
+                          💬 Message
+                        </MessageButton>
                       </div>
                     </Popup>
                   </Marker>

@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../firebase";
+import { auth, db, storage } from "../firebase";
+import { ref, uploadBytes } from "firebase/storage";
 import { uploadProfilePhoto, syncLocalUser } from "../utils/profilePhoto";
 import { signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import VerificationPanel from "../components/shared/VerificationPanel"; // adjust path
+import { MyBookings } from "../components/Bookings";
+import DonationHistory from "../components/DonationHistory";
 
 // ─── tiny toast helper ────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
@@ -53,11 +56,23 @@ function Avatar({ photoURL, name, size = 90 }) {
 }
 
 // ─── main component ────────────────────────────────────────────────────────────
+// ID photos go in a per-user folder that only the owner and admins can read (Storage rules).
+const uploadIdDocument = async (file, uid) => {
+  const ext = file.name.split(".").pop();
+  const r = ref(storage, `verificationDocs/${uid}/id_${Date.now()}.${ext}`);
+  await uploadBytes(r, file);
+  return r.fullPath;
+};
+
 export default function ProfileSettings() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState(() => {
+    // lets other pages link straight to a tab, e.g. /profile?tab=donations
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return ["donations", "bookings", "verification", "password"].includes(t) ? t : "general";
+  });
   const [user, setUser] = useState({ name: "", email: "", role: "Adopter", photoURL: "", emailVerified: false });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -190,6 +205,8 @@ export default function ProfileSettings() {
 
   const tabs = [
     { key: "general", icon: "👤", label: "Account" },
+    { key: "bookings", icon: "📅", label: "My bookings" },
+    { key: "donations", icon: "💚", label: "My donations" },
     { key: "verification", icon: "✅", label: "Verification" },
     { key: "password", icon: "🔒", label: "Password" },
     { key: "notifications", icon: "🔔", label: "Activity" },
@@ -409,13 +426,33 @@ export default function ProfileSettings() {
             </div>
           )}
 
+          {/* Donations */}
+          {activeTab === "donations" && (
+            <div>
+              <h2 className="ps-section-title">My donations</h2>
+              <p className="ps-section-sub">Your giving history, with receipts for confirmed donations.</p>
+              <hr className="ps-divider" />
+              <DonationHistory />
+            </div>
+          )}
+
+          {/* Bookings */}
+          {activeTab === "bookings" && (
+            <div>
+              <h2 className="ps-section-title">My bookings</h2>
+              <p className="ps-section-sub">Shelter visits and vet appointments you've requested.</p>
+              <hr className="ps-divider" />
+              <MyBookings />
+            </div>
+          )}
+
           {/* Verification */}
           {activeTab === "verification" && (
             <div>
               <h2 className="ps-section-title">Verification</h2>
-              <p className="ps-section-sub">Confirm your email so shelters know you're a real person.</p>
+              <p className="ps-section-sub">Verify your email and ID so shelters know you're a real person. Only our review team sees your ID, and it's deleted once reviewed.</p>
               <hr className="ps-divider" />
-              <VerificationPanel role="adopter" requireDocument={false} />
+              <VerificationPanel role="adopter" documentLabel="Government-issued ID" uploadFile={uploadIdDocument} />
             </div>
           )}
 

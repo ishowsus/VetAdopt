@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
  *   me            current Firebase user (or null)
  *   onRequireAuth called when logged out (open your login modal)
  */
-export default function MessageButton({ toUid, me, petId, petName, onRequireAuth, children = "💬 Message" }) {
+export default function MessageButton({ toUid, me, petId, petName, onRequireAuth, style = {}, children = "💬 Message" }) {
   const navigate = useNavigate();
   if (!toUid || me?.uid === toUid) return null;
 
@@ -36,6 +36,7 @@ export default function MessageButton({ toUid, me, petId, petName, onRequireAuth
         fontWeight: 700,
         fontSize: "0.8rem",
         cursor: "pointer",
+        ...style,
       }}
     >
       {children}

@@ -99,6 +99,7 @@ export default function VerificationPanel({
     if (!silent) setChecking(true);
     try {
       await user.reload();
+      if (user.emailVerified) await user.getIdToken(true); // rules read the verified flag from the token
       setEmailVerified(user.emailVerified);
       if (!silent) {
         setEmailMsg(

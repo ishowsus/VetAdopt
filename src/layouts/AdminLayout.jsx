@@ -32,6 +32,7 @@ const NAV_GROUPS = [
       { to: "/admin/adoption-listings", label: "Adoption Listings", icon: "" },
       { to: "/admin/reports", label: "Reports", icon: "" },
       { to: "/admin/animals", label: "Animals", icon: "" },
+      
     ],
   },
   {

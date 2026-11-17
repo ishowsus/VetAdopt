@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, where, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, doc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
-// Admin review queue for pets adopters submit through /rehome. Nothing an
-// adopter lists reaches the Adopt page until it's approved here — enforced
-// both by this page and by the "pets" rules in firestore.rules.
 function AdoptionListings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,11 +10,18 @@ function AdoptionListings() {
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, "pets"), where("listedBy", "==", "adopter"));
+    // Fetch all pets to ensure we catch any adopter listings 
+    // even if the 'listedBy' metadata field was missed or varies.
+    const q = query(collection(db, "pets"));
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        let data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        
+        // Filter client-side for adopter listings or pending status 
+        // Adjust this filter logic based on your exact database schema
+        data = data.filter((p) => p.listedBy === "adopter" || p.status === "Pending Review");
+
         data.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
         setListings(data);
         setError("");
@@ -25,7 +29,7 @@ function AdoptionListings() {
       },
       (err) => {
         console.error(err);
-        setError("Couldn't load adopter listings.");
+        setError("Couldn't load adoption listings.");
         setLoading(false);
       }
     );
@@ -93,7 +97,7 @@ function AdoptionListings() {
                   {[pet.species || pet.type, pet.breed, pet.gender, pet.age].filter(Boolean).join(" · ")}
                 </p>
                 {pet.description && <p style={styles.desc}>{pet.description}</p>}
-                <p style={styles.posterId}>Posted by user: {pet.postedBy}</p>
+                <p style={styles.posterId}>Posted by user: {pet.postedBy || pet.userId || "Unknown"}</p>
 
                 <div style={styles.actions}>
                   {pet.status !== "Available" && (

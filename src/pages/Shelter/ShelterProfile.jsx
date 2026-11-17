@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db, auth, storage } from "../../firebase";
 import { supabase } from "../../supabase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import { Loader2, Upload } from "lucide-react";
+import { geocodeAddress } from "../../utils/geocode";
 import VerificationPanel, { VerificationBadge, useVerification } from "../../components/shared/VerificationPanel"; // adjust path
 import PasswordPanel from "../../components/shared/PasswordPanel"; // adjust path
+import AvailabilityEditor from "../../components/AvailabilityEditor";
+import { BookingsManager } from "../../components/Bookings";
 
 const TABS = [
   { key: "profile", label: "Profile" },
+  { key: "availability", label: "Visiting hours" },
+  { key: "bookings", label: "Visits" },
   { key: "verification", label: "Verification" },
   { key: "security", label: "Security" },
 ];
@@ -33,6 +38,8 @@ export default function ShelterProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const savedAddress = useRef("");
+  const hasCoords = useRef(false);
   const [tab, setTab] = useState("profile");
   const { data: verification } = useVerification(auth.currentUser?.uid);
   const [notice, setNotice] = useState("");
@@ -64,6 +71,8 @@ export default function ShelterProfile() {
           description: data.description || "",
           logoUrl: data.logoUrl || data.photoUrl || "",
         });
+        savedAddress.current = (data.address || "").trim();
+        hasCoords.current = typeof data.lat === "number" && typeof data.lng === "number";
       }
     } catch (err) {
       console.error("Error fetching shelter profile:", err);
@@ -170,6 +179,19 @@ export default function ShelterProfile() {
 
       // setDoc + merge (rather than updateDoc) so this doesn't throw for shelters
       // whose "users" doc hasn't been created yet (e.g. right after signup).
+      // Put the shelter on the home-page map when the address is new or changed.
+      const address = profile.address.trim();
+      let coords = null;
+      let mapNote = "";
+      if (address && (address !== savedAddress.current || !hasCoords.current)) {
+        try {
+          coords = await geocodeAddress(address);
+          if (!coords) mapNote = " We couldn't place that address on the map. Add more detail (street, barangay, city).";
+        } catch {
+          mapNote = " We couldn't reach the map service, so your map pin wasn't updated.";
+        }
+      }
+
       await setDoc(
         doc(db, "users", user.uid),
         {
@@ -177,12 +199,15 @@ export default function ShelterProfile() {
           phone: profile.phone,
           address: profile.address,
           description: profile.description,
+          ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
           updatedAt: new Date(),
         },
         { merge: true }
       );
+      savedAddress.current = address;
+      if (coords) hasCoords.current = true;
 
-      setNotice("Profile updated successfully!");
+      setNotice(`Profile updated successfully!${coords ? " You're now on the map." : ""}${mapNote}`);
     } catch (err) {
       console.error("Error saving profile:", err);
       setError("Failed to save profile changes.");
@@ -365,6 +390,15 @@ export default function ShelterProfile() {
         </button>
       </form>
       )}
+
+      {tab === "availability" && (
+        <div>
+          <p style={{ color: "#6b7280", marginTop: 0 }}>Set when adopters can visit. They pick an open time, and you confirm each request.</p>
+          <AvailabilityEditor role="shelter" />
+        </div>
+      )}
+
+      {tab === "bookings" && <BookingsManager role="shelter" />}
 
       {tab === "verification" && (
         <VerificationPanel
