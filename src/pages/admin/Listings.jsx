@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { auth, db } from "../../firebase";
-import { uploadPetPhoto, PET_PHOTO_TYPES, MAX_PET_PHOTO_BYTES } from "../../utils/petPhotos";
+import { uploadPetPhoto, PET_PHOTO_TYPES, MAX_PET_PHOTO_BYTES } from "../../utils/PetPhotos";
 
 const TYPES = ["Dog", "Cat", "Rabbit", "Bird", "Other"];
 const AGES = ["Baby", "Young", "Adult", "Senior"];

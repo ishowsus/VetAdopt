@@ -4,7 +4,7 @@ import { supabase } from "../../supabase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import { Loader2, Upload } from "lucide-react";
-import { geocodeAddress } from "../../utils/geocode";
+import { geocodeAddress } from "../../utils/Geocode";
 import VerificationPanel, { VerificationBadge, useVerification } from "../../components/shared/VerificationPanel"; // adjust path
 import PasswordPanel from "../../components/shared/PasswordPanel"; // adjust path
 import AvailabilityEditor from "../../components/AvailabilityEditor";
