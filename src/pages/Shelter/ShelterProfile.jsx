@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { db, auth, storage } from "../../firebase";
+import { db, auth } from "../../firebase";
+import { saveVerificationFile } from "../../utils/verificationFile";
 import { supabase } from "../../supabase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes } from "firebase/storage";
 import { Loader2, Upload } from "lucide-react";
 import { geocodeAddress } from "../../utils/geocode";
 import LocationPicker from "../../components/LocationPicker";
@@ -19,13 +19,8 @@ const TABS = [
   { key: "security", label: "Security" },
 ];
 
-// Verification papers go to Firebase Storage so Storage rules can limit reads to the owner and admins.
-const uploadVerificationDoc = async (file, uid) => {
-  const ext = file.name.split(".").pop();
-  const r = ref(storage, `verificationDocs/${uid}/registration_${Date.now()}.${ext}`);
-  await uploadBytes(r, file);
-  return r.fullPath;
-};
+// The registration photo is stored privately in Firestore (only the owner and admins can read it).
+const uploadVerificationDoc = saveVerificationFile;
 
 export default function ShelterProfile() {
   const [profile, setProfile] = useState({

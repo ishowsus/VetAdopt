@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { auth, db, storage } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { loadVerificationFile, deleteVerificationFile, dataUrlToBlobUrl } from "../../utils/verificationFile";
 import {
   collection,
   query,
@@ -10,7 +11,6 @@ import {
   writeBatch,
   serverTimestamp,
 } from "firebase/firestore";
-import { ref, getDownloadURL, deleteObject } from "firebase/storage";
 import { VerificationBadge } from "../../components/shared/VerificationPanel";
 
 const FILTERS = [
@@ -31,6 +31,7 @@ export default function Verifications() {
   const [notes, setNotes] = useState({});
   const [busyId, setBusyId] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [previews, setPreviews] = useState({}); // id -> image url
   const [pendingCount, setPendingCount] = useState(0);
 
   // Live count for the "Pending" tab, whichever tab is open.
@@ -85,15 +86,30 @@ export default function Verifications() {
   const roleOf = (r) => (String(r || "").toLowerCase() === "veterinarian" ? "vet" : String(r || "").toLowerCase());
   const visible = items.filter((i) => roleFilter === "all" || roleOf(i.role) === roleFilter);
 
+  const isImage = (item) => item.documentPath?.endsWith("/inline") || /\.(jpe?g|png|webp)$/i.test(item.documentName || "");
+
+  const togglePreview = async (item) => {
+    if (previews[item.id]) return setPreviews((p) => ({ ...p, [item.id]: "" }));
+    try {
+      const url = await loadVerificationFile(item.id);
+      if (!url) throw new Error("missing");
+      setPreviews((p) => ({ ...p, [item.id]: url }));
+    } catch (err) {
+      console.error(err);
+      setError("Couldn't load that photo. It may have been deleted, or the rules don't let admins read it yet.");
+    }
+  };
+
   const viewDocument = async (item) => {
     const w = window.open("about:blank", "_blank"); // open first so popup blockers allow it
     try {
-      const url = await getDownloadURL(ref(storage, item.documentPath));
-      if (w) w.location.href = url;
+      const url = await loadVerificationFile(item.id);
+      if (!url) throw new Error("missing");
+      if (w) w.location.href = dataUrlToBlobUrl(url);
     } catch (err) {
       console.error(err);
       if (w) w.close();
-      setError("Couldn't open that document. Check your Storage rules allow admins to read it.");
+      setError("Couldn't open that photo. It may have been deleted, or the rules don't let admins read it yet.");
     }
   };
 
@@ -129,7 +145,7 @@ export default function Verifications() {
         read: false,
       });
       await batch.commit();
-      if (item.role === "adopter" && item.documentPath) deleteObject(ref(storage, item.documentPath)).catch(() => {});
+      if (item.role === "adopter") deleteVerificationFile(item.id).catch(() => {}); // the ID photo is removed after review
     } catch (err) {
       console.error(err);
       setError("Couldn't save that decision. Check your Firestore rules allow admins to write.");
@@ -188,7 +204,7 @@ export default function Verifications() {
       {loading ? (
         <p>Loading…</p>
       ) : visible.length === 0 ? (
-        <p style={{ color: "#90a4ae" }}>Nothing here right now.</p>
+        <p style={{ color: "#90a4ae" }}>{filter === "pending" ? "No pending requests. New submissions show up here instantly." : "Nothing here right now."}</p>
       ) : (
         visible.map((item) => {
           const p = people[item.id] || {};
@@ -215,9 +231,16 @@ export default function Verifications() {
                 <dt style={{ color: "#607d8b" }}>File</dt>
                 <dd style={{ margin: 0 }}>
                   {item.documentPath ? (
-                    <button type="button" onClick={() => viewDocument(item)} style={{ background: "none", border: "none", color: "#1565c0", cursor: "pointer", padding: 0, textDecoration: "underline", fontSize: 14 }}>
-                      {item.documentName || "Open document"}
-                    </button>
+                    <>
+                      <button type="button" onClick={() => viewDocument(item)} style={{ background: "none", border: "none", color: "#1565c0", cursor: "pointer", padding: 0, textDecoration: "underline", fontSize: 14 }}>
+                        {item.documentName || "Open document"}
+                      </button>
+                      {isImage(item) && (
+                        <button type="button" onClick={() => togglePreview(item)} style={{ marginLeft: 12, background: "none", border: "none", color: "#2e7d32", cursor: "pointer", padding: 0, fontWeight: 600, fontSize: 14 }}>
+                          {previews[item.id] ? "Hide preview" : "👁 Preview here"}
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <span style={{ color: "#607d8b" }}>{item.documentName || "No file"}</span>
                   )}
@@ -229,6 +252,10 @@ export default function Verifications() {
                   </>
                 )}
               </dl>
+
+              {previews[item.id] && (
+                <img src={previews[item.id]} alt={`Submitted document from ${p.name || "applicant"}`} style={{ maxWidth: "100%", maxHeight: 380, borderRadius: 10, margin: "0 0 12px", border: "1px solid #e2e8f0" }} />
+              )}
 
               {item.status === "pending" && (
                 <>

@@ -1,10 +1,31 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../../firebase"; // adjust path to your firebase.js
 import { sendEmailVerification } from "firebase/auth";
-import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, setDoc, where, writeBatch } from "firebase/firestore";
 
-const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+// Best-effort: puts a line in every admin's inbox so a submission doesn't sit unnoticed.
+async function notifyAdmins(name, role) {
+  const snap = await getDocs(query(collection(db, "users"), where("role", "in", ["admin", "Admin"])));
+  if (snap.empty) return;
+  const batch = writeBatch(db);
+  snap.docs.slice(0, 10).forEach((d) =>
+    batch.set(doc(collection(db, "notifications")), {
+      userId: d.id,
+      text: `🛡️ ${name} submitted ${role === "adopter" ? "an ID" : "a document"} for verification. Review it in Verification requests.`,
+      type: "verification",
+      createdAt: serverTimestamp(),
+      read: false,
+    })
+  );
+  await batch.commit();
+}
+
+const MAX_BYTES = 15 * 1024 * 1024; // the photo is shrunk before it's stored
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+// Stops a stuck network call from leaving the button on "Submitting…" forever.
+const withTimeout = (promise, ms, message) =>
+  Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))]);
 
 export const STATUS_META = {
   unverified: { label: "Not verified", bg: "#f3f4f6", fg: "#6b7280" },
@@ -152,11 +173,11 @@ export default function VerificationPanel({
     e.target.value = "";
     if (!f) return;
     if (!ALLOWED_TYPES.includes(f.type)) {
-      setDocMsg({ type: "error", text: "Upload a PDF, PNG, JPEG, or WEBP file." });
+      setDocMsg({ type: "error", text: "Use a JPEG, PNG or WEBP photo of the document." });
       return;
     }
     if (f.size > MAX_BYTES) {
-      setDocMsg({ type: "error", text: "File must be smaller than 5 MB." });
+      setDocMsg({ type: "error", text: "That photo is too large (15 MB max)." });
       return;
     }
     setDocMsg(null);
@@ -176,8 +197,8 @@ export default function VerificationPanel({
     setSubmitting(true);
     setDocMsg(null);
     try {
-      const documentPath = await uploadFile(file, user.uid);
-      await setDoc(doc(db, "verifications", user.uid), {
+      const documentPath = await withTimeout(uploadFile(file, user.uid), 45000, "Saving the photo took too long. Check your connection and try again.");
+      await withTimeout(setDoc(doc(db, "verifications", user.uid), {
         userId: user.uid,
         role,
         status: "pending",
@@ -186,12 +207,19 @@ export default function VerificationPanel({
         idNumber: idNumber.trim(),
         submittedAt: serverTimestamp(),
         reviewNote: "",
-      });
+      }), 20000, "Sending your request took too long. Check your connection and try again.");
+      notifyAdmins(user.displayName || user.email || "Someone", role).catch(() => {});
       setFile(null);
       setDocMsg({ type: "ok", text: "Submitted. We'll review it and update your status here." });
     } catch (err) {
       console.error(err);
-      setDocMsg({ type: "error", text: "Couldn't submit your document. Try again." });
+      setDocMsg({
+        type: "error",
+        text:
+          err.code === "permission-denied"
+            ? "We couldn't save your submission. Make sure you're logged in, then try again."
+            : err.message || "Couldn't submit your document. Try again.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -281,11 +309,11 @@ export default function VerificationPanel({
               )}
 
               <div style={{ marginTop: 12 }}>
-                <label htmlFor="ver-file" style={s.label}>Document (PDF or photo, max 5 MB)</label>
+                <label htmlFor="ver-file" style={s.label}>Photo of the document (JPEG, PNG or WEBP)</label>
                 <input
                   id="ver-file"
                   type="file"
-                  accept=".pdf,image/png,image/jpeg,image/webp"
+                  accept="image/png,image/jpeg,image/webp"
                   onChange={handleFile}
                   disabled={!emailVerified}
                 />

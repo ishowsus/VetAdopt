@@ -22,7 +22,7 @@ const NAV_PUBLIC = [
 
 const NAV_AUTH_SIMPLE = [
   { to: "/vets",  label: "Vet Map",    icon: "" },
-  { to: "/quiz",  label: "Matchmaker", icon: "" },
+  
 ];
 
 const ADOPT_CATEGORIES = [

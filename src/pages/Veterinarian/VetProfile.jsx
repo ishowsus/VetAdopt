@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { auth, db, storage } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { saveVerificationFile } from "../../utils/verificationFile";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { uploadProfilePhoto } from "../../utils/profilePhoto";
 import VerificationPanel, { VerificationBadge, useVerification } from "../../components/shared/VerificationPanel"; // adjust path
 import PasswordPanel from "../../components/shared/PasswordPanel"; // adjust path
@@ -12,13 +12,8 @@ const TABS = [
   { key: "security", label: "Security" },
 ];
 
-// Verification documents go in a per-user folder; lock reads down in Storage rules.
-const uploadVerificationDoc = async (file, uid) => {
-  const ext = file.name.split(".").pop();
-  const r = ref(storage, `verificationDocs/${uid}/license_${Date.now()}.${ext}`);
-  await uploadBytes(r, file);
-  return r.fullPath;
-};
+// The license photo is stored privately in Firestore (only the owner and admins can read it).
+const uploadVerificationDoc = saveVerificationFile;
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 

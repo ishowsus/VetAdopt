@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db, storage } from "../firebase";
-import { ref, uploadBytes } from "firebase/storage";
+import { auth, db } from "../firebase";
+import { saveVerificationFile } from "../utils/verificationFile";
 import { uploadProfilePhoto, syncLocalUser } from "../utils/profilePhoto";
 import { signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
@@ -56,13 +56,8 @@ function Avatar({ photoURL, name, size = 90 }) {
 }
 
 // ─── main component ────────────────────────────────────────────────────────────
-// ID photos go in a per-user folder that only the owner and admins can read (Storage rules).
-const uploadIdDocument = async (file, uid) => {
-  const ext = file.name.split(".").pop();
-  const r = ref(storage, `verificationDocs/${uid}/id_${Date.now()}.${ext}`);
-  await uploadBytes(r, file);
-  return r.fullPath;
-};
+// The ID photo is stored privately in Firestore (only the owner and admins can read it).
+const uploadIdDocument = saveVerificationFile;
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
