@@ -1,3 +1,4 @@
+// FILE: src/pages/Shelter/Donations.jsx
 import { useEffect, useMemo, useState } from "react";
 import { collection, addDoc, doc, onSnapshot, query, serverTimestamp, where, writeBatch } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -287,13 +288,13 @@ const styles = {
   headerRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", gap: 12, flexWrap: "wrap" },
   title: { margin: 0, fontSize: "22px" },
   subtitle: { margin: "4px 0 0", color: "#607d8b" },
-  addButton: { background: "#2e7d32", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "8px", fontWeight: 600, cursor: "pointer" },
-  secondaryButton: { background: "#fff", color: "#2e7d32", border: "2px solid #2e7d32", padding: "8px 16px", borderRadius: "8px", fontWeight: 600, cursor: "pointer" },
+  addButton: { background: "#0d6b6e", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "8px", fontWeight: 600, cursor: "pointer" },
+  secondaryButton: { background: "#fff", color: "#0d6b6e", border: "2px solid #0d6b6e", padding: "8px 16px", borderRadius: "8px", fontWeight: 600, cursor: "pointer" },
   statGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14, marginBottom: 20 },
   statCard: { display: "flex", flexDirection: "column", gap: 2, padding: 16, background: "#fff", borderRadius: 14, boxShadow: "0 4px 14px rgba(0,0,0,.06)" },
   statAlert: { background: "#fffbeb", border: "1px solid #fcd34d" },
   statLabel: { fontSize: 12, color: "#607d8b", textTransform: "uppercase", letterSpacing: "0.04em" },
-  statValue: { fontSize: 24, color: "#1b5e20" },
+  statValue: { fontSize: 24, color: "#0a3d40" },
   statSub: { fontSize: 12, color: "#90a4ae" },
   walletCard: { background: "#fff", padding: "20px", borderRadius: "14px", boxShadow: "0 4px 14px rgba(0,0,0,.06)", marginBottom: "24px" },
   walletTitle: { margin: "0 0 16px", fontSize: "16px", color: "#37474f" },
@@ -305,7 +306,7 @@ const styles = {
   walletName: { margin: 0, fontSize: "12px", color: "#607d8b" },
   filterRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 14 },
   filterChip: { padding: "7px 16px", borderRadius: 999, border: "1px solid #cfd8dc", background: "#fff", color: "#37474f", fontWeight: 600, cursor: "pointer" },
-  filterChipOn: { background: "#2e7d32", borderColor: "#2e7d32", color: "#fff" },
+  filterChipOn: { background: "#0d6b6e", borderColor: "#0d6b6e", color: "#fff" },
   search: { padding: "9px 14px", borderRadius: 999, border: "1px solid #cfd8dc", minWidth: 220 },
   emptyState: { padding: "40px", textAlign: "center", color: "#90a4ae", background: "#f8f9fa", borderRadius: "10px" },
   tableWrap: { background: "#fff", borderRadius: "14px", boxShadow: "0 4px 14px rgba(0,0,0,.06)", overflowX: "auto" },
@@ -314,7 +315,7 @@ const styles = {
   td: { padding: "12px 16px", fontSize: "14px", borderBottom: "1px solid #eceff1", color: "#37474f", verticalAlign: "top" },
   msg: { marginTop: 4, fontSize: 12, color: "#607d8b" },
   chip: { padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" },
-  confirmBtn: { padding: "6px 12px", border: "none", borderRadius: 6, background: "#2e7d32", color: "#fff", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
+  confirmBtn: { padding: "6px 12px", border: "none", borderRadius: 6, background: "#0d6b6e", color: "#fff", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
   rejectBtn: { padding: "6px 12px", border: "1px solid #b91c1c", borderRadius: 6, background: "#fff", color: "#b91c1c", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
   modal: { background: "#fff", padding: "24px", borderRadius: "12px", width: "100%", maxWidth: "400px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" },
@@ -323,7 +324,7 @@ const styles = {
   errorBanner: { padding: "8px 12px", background: "#fdecea", color: "#b3261e", borderRadius: "6px", fontSize: "13px", marginBottom: "12px" },
   modalActions: { display: "flex", gap: "10px", marginTop: "8px" },
   cancelButton: { flex: 1, padding: "10px", background: "#eceff1", border: "none", borderRadius: "6px", color: "#37474f", cursor: "pointer" },
-  saveButton: { flex: 1, padding: "10px", background: "#2e7d32", border: "none", borderRadius: "6px", color: "#fff", fontWeight: 600, cursor: "pointer" },
+  saveButton: { flex: 1, padding: "10px", background: "#0d6b6e", border: "none", borderRadius: "6px", color: "#fff", fontWeight: 600, cursor: "pointer" },
 };
 
 export default Donations;

@@ -4,6 +4,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import EnhancedChatbot from "./components/EnhancedChatbot";
 import MessageNotifier from "./components/MessageNotifier";
+import RoleGuide from "./components/RoleGuide";
+import VetGate from "./components/VetGate";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -17,6 +19,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import PetMatchmaker from "./pages/PetMatchmaker";
 import Messages from "./pages/Messages";
 import PostPet from "./pages/PostPet";
+import PetCare from "./pages/PetCare";
 
 // Admin Context & Layout
 import { AdminProvider } from "./layouts/AdminContext";
@@ -30,7 +33,6 @@ import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import Verifications from "./pages/admin/Verifications";
 import Listings from "./pages/admin/Listings";
-import AdoptionListings from "./pages/admin/AdoptionListings";
 
 // Vet Pages & Layout
 import VetLayout from "./layouts/VetLayout";
@@ -206,6 +208,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
+            <Route path="/pet-care" element={<PetCare />} />
             <Route
               path="/login"
               element={getLanding(user) ? <Navigate to={getLanding(user)} replace /> : <Login />}
@@ -243,7 +246,6 @@ function App() {
               <Route path="settings" element={<Settings />} />
               <Route path="verifications" element={<Verifications />} />
               <Route path="listings" element={<Listings />} />
-              <Route path="adoptionlistings" element={<AdoptionListings />} />
               <Route
                 path="*"
                 element={
@@ -259,7 +261,9 @@ function App() {
               path="/vet/*"
               element={
                 <ProtectedRoute user={user} roles={["veterinarian"]}>
-                  <VetLayout />
+                  <VetGate>
+                    <VetLayout />
+                  </VetGate>
                 </ProtectedRoute>
               }
             >
@@ -320,6 +324,7 @@ function App() {
       </div>
 
       <MessageNotifier user={user} />
+      <RoleGuide user={user} />
       <EnhancedChatbot user={user} />
     </div>
   );

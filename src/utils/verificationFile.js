@@ -8,10 +8,11 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firest
  */
 
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_CHARS = 700000; // a Firestore document can't exceed 1 MiB
+const TOTAL_CHARS = 850000; // shared by all photos: a Firestore document can't exceed 1 MiB
+export const MAX_VERIFICATION_FILES = 3;
 const ATTEMPTS = [[1600, 0.78], [1400, 0.7], [1200, 0.65], [1000, 0.6], [800, 0.55], [640, 0.5]];
 
-async function toDataUrl(file) {
+async function toDataUrl(file, budget) {
   let bitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
@@ -28,7 +29,7 @@ async function toDataUrl(file) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     const url = canvas.toDataURL("image/jpeg", quality);
-    if (url.length <= MAX_CHARS) {
+    if (url.length <= budget) {
       bitmap.close?.();
       return url;
     }
@@ -37,25 +38,30 @@ async function toDataUrl(file) {
   throw new Error("That photo is too detailed to store. Try a clearer, smaller photo.");
 }
 
-// Used as the uploadFile function of VerificationPanel: (file, uid) => path string.
-export async function saveVerificationFile(file, uid) {
-  if (!TYPES.includes(file.type)) throw new Error("Use a JPEG, PNG or WEBP photo.");
-  const dataUrl = await toDataUrl(file);
-  await setDoc(doc(db, "verificationFiles", uid), {
-    ownerId: uid,
-    name: String(file.name || "photo").slice(0, 80),
-    dataUrl,
-    createdAt: serverTimestamp(),
-  });
-  return `verificationDocs/${uid}/inline`; // a label; the real file is the Firestore document
+// Used as the uploadFile function of VerificationPanel: (file or [files], uid) => path label.
+export async function saveVerificationFile(input, uid) {
+  const list = Array.isArray(input) ? input : [input];
+  if (list.length === 0 || list.length > MAX_VERIFICATION_FILES) throw new Error(`Add between 1 and ${MAX_VERIFICATION_FILES} photos.`);
+  if (list.some((f) => !TYPES.includes(f.type))) throw new Error("Use JPEG, PNG or WEBP photos.");
+  const budget = Math.floor(TOTAL_CHARS / list.length);
+  const files = [];
+  for (const f of list) files.push({ name: String(f.name || "photo").slice(0, 80), dataUrl: await toDataUrl(f, budget) });
+  await setDoc(doc(db, "verificationFiles", uid), { ownerId: uid, files, createdAt: serverTimestamp() });
+  return `verificationDocs/${uid}/inline`; // a label; the real files are in the Firestore document
 }
 
-// Admin side. Returns "" unless the stored value is a plain JPEG data URL.
-export async function loadVerificationFile(uid) {
+// Admin side: [{ name, url }], keeping only plain JPEG data URLs.
+export async function loadVerificationFiles(uid) {
   const snap = await getDoc(doc(db, "verificationFiles", uid));
-  const url = snap.exists() ? snap.data().dataUrl : "";
-  return /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(url || "") ? url : "";
+  if (!snap.exists()) return [];
+  const d = snap.data();
+  const files = Array.isArray(d.files) ? d.files : d.dataUrl ? [{ name: d.name, dataUrl: d.dataUrl }] : [];
+  return files
+    .filter((f) => /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(f?.dataUrl || ""))
+    .map((f) => ({ name: f.name || "photo", url: f.dataUrl }));
 }
+
+export const loadVerificationFile = async (uid) => (await loadVerificationFiles(uid))[0]?.url || "";
 
 export const deleteVerificationFile = (uid) => deleteDoc(doc(db, "verificationFiles", uid));
 

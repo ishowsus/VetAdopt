@@ -1,3 +1,4 @@
+// FILE: src/pages/ProfileSettings.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
@@ -8,6 +9,7 @@ import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, 
 import VerificationPanel from "../components/shared/VerificationPanel"; // adjust path
 import { MyBookings } from "../components/Bookings";
 import DonationHistory from "../components/DonationHistory";
+import PetRecords from "../components/PetRecords";
 
 // ─── tiny toast helper ────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
@@ -16,7 +18,7 @@ function Toast({ message, type, onClose }) {
     return () => clearTimeout(t);
   }, [onClose]);
 
-  const colors = { success: "#2e7d32", error: "#c62828", info: "#1565c0" };
+  const colors = { success: "#0d6b6e", error: "#c62828", info: "#1565c0" };
   return (
     <div style={{
       position: "fixed", bottom: "28px", right: "28px", zIndex: 9999,
@@ -39,12 +41,12 @@ function Avatar({ photoURL, name, size = 90 }) {
       alt="Profile"
       style={{
         width: size, height: size, borderRadius: "50%", objectFit: "cover",
-        border: "3px solid #e8f5e9", boxShadow: "0 8px 20px rgba(46,125,50,0.2)",
+        border: "3px solid #d6f2f0", boxShadow: "0 8px 20px rgba(46,125,50,0.2)",
       }}
     />
   ) : (
     <div style={{
-      width: size, height: size, background: "linear-gradient(135deg,#388e3c,#1b5e20)",
+      width: size, height: size, background: "linear-gradient(135deg,#388e3c,#0a3d40)",
       color: "white", borderRadius: "50%", display: "flex", alignItems: "center",
       justifyContent: "center", fontSize: size * 0.38, fontWeight: 800,
       boxShadow: "0 8px 20px rgba(46,125,50,0.25)", letterSpacing: "-1px",
@@ -66,7 +68,7 @@ export default function ProfileSettings() {
   const [activeTab, setActiveTab] = useState(() => {
     // lets other pages link straight to a tab, e.g. /profile?tab=donations
     const t = new URLSearchParams(window.location.search).get("tab");
-    return ["donations", "bookings", "verification", "password"].includes(t) ? t : "general";
+    return ["donations", "bookings", "records", "verification", "password"].includes(t) ? t : "general";
   });
   const [user, setUser] = useState({ name: "", email: "", role: "Adopter", photoURL: "", emailVerified: false });
   const [loading, setLoading] = useState(true);
@@ -189,7 +191,7 @@ export default function ProfileSettings() {
     return (
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        minHeight: "100vh", background: "#f0f4f0", color: "#2e7d32",
+        minHeight: "100vh", background: "#f0f4f0", color: "#0d6b6e",
         fontFamily: "Georgia, serif", fontSize: "1.1rem", gap: "10px",
       }}>
         <span style={{ animation: "spin 1.2s linear infinite", display: "inline-block" }}>🐾</span>
@@ -202,6 +204,7 @@ export default function ProfileSettings() {
     { key: "general", icon: "👤", label: "Account" },
     { key: "bookings", icon: "📅", label: "My bookings" },
     { key: "donations", icon: "💚", label: "My donations" },
+    { key: "records", icon: "🩺", label: "Pet health" },
     { key: "verification", icon: "✅", label: "Verification" },
     { key: "password", icon: "🔒", label: "Password" },
     { key: "notifications", icon: "🔔", label: "Activity" },
@@ -254,12 +257,12 @@ export default function ProfileSettings() {
         .ps-user-email { font-size: 0.76rem; color: #9aaa9a; margin-top: 3px; text-align: center; }
         .ps-role-badge {
           margin-top: 10px; padding: 4px 14px; border-radius: 99px;
-          background: #e8f5e9; color: #2e7d32; font-size: 0.67rem;
+          background: #d6f2f0; color: #0d6b6e; font-size: 0.67rem;
           font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
           border: 1px solid #c8e6c9;
         }
 
-        .ps-verified { margin-top: 8px; font-size: 0.72rem; font-weight: 700; color: #2e7d32; }
+        .ps-verified { margin-top: 8px; font-size: 0.72rem; font-weight: 700; color: #0d6b6e; }
         .ps-nav { width: 100%; margin-top: 32px; }
         .ps-nav-btn {
           width: 100%; padding: 13px 16px; margin-bottom: 6px;
@@ -269,8 +272,8 @@ export default function ProfileSettings() {
           display: flex; align-items: center; gap: 10px;
           font-family: 'DM Sans', sans-serif;
         }
-        .ps-nav-btn:hover:not(.active):not(.logout) { background: #e8f5e8; color: #2e7d32; }
-        .ps-nav-btn.active { background: #2e7d32; color: white; box-shadow: 0 4px 12px rgba(46,125,50,0.25); }
+        .ps-nav-btn:hover:not(.active):not(.logout) { background: #e8f5e8; color: #0d6b6e; }
+        .ps-nav-btn.active { background: #0d6b6e; color: white; box-shadow: 0 4px 12px rgba(46,125,50,0.25); }
         .ps-nav-btn.logout { color: #c62828; margin-top: 28px; }
         .ps-nav-btn.logout:hover { background: #ffebee; }
 
@@ -286,14 +289,14 @@ export default function ProfileSettings() {
         .ps-field { margin-bottom: 22px; }
         .ps-label {
           display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
-          color: #2e7d32; text-transform: uppercase; margin-bottom: 8px;
+          color: #0d6b6e; text-transform: uppercase; margin-bottom: 8px;
         }
         .ps-input {
           width: 100%; padding: 13px 16px; border-radius: 12px;
           border: 1.5px solid #e0e8e0; font-size: 0.95rem; transition: border-color 0.2s, box-shadow 0.2s;
           font-family: 'DM Sans', sans-serif; color: #1a2e1a; background: #fff;
         }
-        .ps-input:focus { border-color: #2e7d32; outline: none; box-shadow: 0 0 0 3px rgba(46,125,50,0.1); }
+        .ps-input:focus { border-color: #0d6b6e; outline: none; box-shadow: 0 0 0 3px rgba(46,125,50,0.1); }
         .ps-input.readonly { background: #f6faf6; color: #9aaa9a; cursor: not-allowed; }
         .ps-input.error { border-color: #c62828; }
         .ps-err { font-size: 0.75rem; color: #c62828; margin-top: 5px; }
@@ -303,8 +306,8 @@ export default function ProfileSettings() {
           font-weight: 700; font-size: 0.9rem; transition: all 0.2s;
           font-family: 'DM Sans', sans-serif;
         }
-        .ps-btn-primary { background: #2e7d32; color: white; }
-        .ps-btn-primary:hover:not(:disabled) { background: #1b5e20; box-shadow: 0 4px 12px rgba(46,125,50,0.3); transform: translateY(-1px); }
+        .ps-btn-primary { background: #0d6b6e; color: white; }
+        .ps-btn-primary:hover:not(:disabled) { background: #0a3d40; box-shadow: 0 4px 12px rgba(46,125,50,0.3); transform: translateY(-1px); }
         .ps-btn-primary:disabled { background: #c8d8c8; cursor: not-allowed; }
 
         /* ── Notification cards ── */
@@ -418,6 +421,16 @@ export default function ProfileSettings() {
               <button className="ps-btn ps-btn-primary" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? "Saving…" : "Save Changes"}
               </button>
+            </div>
+          )}
+
+          {/* Pet health records */}
+          {activeTab === "records" && (
+            <div>
+              <h2 className="ps-section-title">Pet health records</h2>
+              <p className="ps-section-sub">Visits, vaccines and follow-ups your vet has recorded for your pets.</p>
+              <hr className="ps-divider" />
+              <PetRecords />
             </div>
           )}
 

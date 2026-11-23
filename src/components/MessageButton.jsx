@@ -1,3 +1,4 @@
+// FILE: src/components/MessageButton.jsx
 import { useNavigate } from "react-router-dom";
 
 /**
@@ -29,10 +30,10 @@ export default function MessageButton({ toUid, me, petId, petName, onRequireAuth
       style={{
         marginLeft: "auto",
         padding: "6px 14px",
-        border: "2px solid #16a34a",
+        border: "2px solid #0d6b6e",
         borderRadius: 999,
         background: "#fff",
-        color: "#15803d",
+        color: "#0d6b6e",
         fontWeight: 700,
         fontSize: "0.8rem",
         cursor: "pointer",

@@ -1,3 +1,4 @@
+// FILE: src/pages/PostPet.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -6,12 +7,17 @@ import { auth, db } from "../firebase";
 import { uploadPetPhoto, PET_PHOTO_TYPES, MAX_PET_PHOTO_BYTES } from "../utils/petPhotos";
 
 const TYPES = ["Dog", "Cat", "Rabbit", "Bird", "Other"];
-const AGES = ["Baby", "Young", "Adult", "Senior"];
+// Stored as text like "8 months" or "2 years", which is the format the Adopt page filters understand.
+const ageText = (n, unit) => {
+  const num = Number(n);
+  const word = unit === "years" ? "year" : "month";
+  return `${num} ${word}${num === 1 ? "" : "s"}`;
+};
 const GENDERS = ["Male", "Female"];
 const MAX_PHOTOS = 3;
 
 const EMPTY = {
-  name: "", type: "", breed: "", age: "", gender: "", city: "",
+  name: "", type: "", breed: "", age: "", ageUnit: "months", gender: "", city: "",
   description: "", reason: "", vaccinated: false, neutered: false,
   ownsPet: false, noSale: false, safeMeet: false,
 };
@@ -77,7 +83,9 @@ export default function PostPet() {
     const e = {};
     if (form.name.trim().length < 2) e.name = "Enter the pet's name.";
     if (!form.type) e.type = "Choose a type.";
-    if (!form.age) e.age = "Choose an age group.";
+    const ageNum = Number(form.age);
+    if (!form.age || !Number.isInteger(ageNum) || ageNum < 1) e.age = "Enter the age as a whole number (1 or more).";
+    else if (ageNum > (form.ageUnit === "years" ? 30 : 60)) e.age = form.ageUnit === "years" ? "That seems too old. Check the age." : "Use years for pets older than 5 years.";
     if (!form.gender) e.gender = "Choose a gender.";
     if (!form.city.trim()) e.city = "Enter your city or area.";
     if (form.description.trim().length < 30) e.description = "Tell us a bit more (at least 30 characters).";
@@ -109,7 +117,7 @@ export default function PostPet() {
         name: form.name.trim(),
         type: form.type,
         breed: form.breed.trim(),
-        age: form.age,
+        age: ageText(form.age, form.ageUnit),
         gender: form.gender,
         city: form.city.trim(),
         location: form.city.trim(),
@@ -124,6 +132,7 @@ export default function PostPet() {
         postedBy: u.uid,
         postedByRole: "owner",
         userId: u.uid,
+        listedBy: "adopter",
         createdAt: serverTimestamp(),
       });
       setForm(EMPTY);
@@ -185,7 +194,7 @@ export default function PostPet() {
   const check = (key, text) => (
     <div style={{ marginBottom: 10 }}>
       <label style={s.check}>
-        <input type="checkbox" checked={form[key]} onChange={set(key)} style={{ marginTop: 3, width: 18, height: 18, accentColor: "#15803d", flexShrink: 0 }} />
+        <input type="checkbox" checked={form[key]} onChange={set(key)} style={{ marginTop: 3, width: 18, height: 18, accentColor: "#0d6b6e", flexShrink: 0 }} />
         <span>{text}</span>
       </label>
       {errors[key] && <p role="alert" style={s.err}>{errors[key]}</p>}
@@ -213,7 +222,18 @@ export default function PostPet() {
           {field("city", "City or area", input("city", { maxLength: 60, placeholder: "e.g. Mandaue, Cebu" }))}
         </div>
         <div style={s.row}>
-          {field("age", "Age group", select("age", AGES))}
+          {field(
+            "age",
+            "Age",
+            <div style={{ display: "flex", gap: 8 }}>
+              <input id="pp-age" type="number" min="1" max="60" inputMode="numeric" style={{ ...s.input, ...(errors.age ? s.bad : {}) }} value={form.age} onChange={set("age")} />
+              <select id="pp-ageUnit" aria-label="Age unit" style={{ ...s.input, width: 120, flexShrink: 0 }} value={form.ageUnit} onChange={set("ageUnit")}>
+                <option value="months">months</option>
+                <option value="years">years</option>
+              </select>
+            </div>,
+            "For puppies and kittens, use months."
+          )}
           {field("gender", "Gender", select("gender", GENDERS))}
         </div>
 
@@ -290,11 +310,11 @@ const s = {
   hint: { margin: "4px 0 0", fontSize: 12, color: "#64748b" },
   err: { margin: "4px 0 0", fontSize: 12, color: "#b91c1c", fontWeight: 600 },
   check: { display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, lineHeight: 1.4, cursor: "pointer" },
-  promises: { padding: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, margin: "6px 0 16px" },
+  promises: { padding: 14, background: "#ecf9f8", border: "1px solid #b8e6e3", borderRadius: 12, margin: "6px 0 16px" },
   thumb: { width: 96, height: 96, objectFit: "cover", borderRadius: 10, display: "block" },
   thumbX: { position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: "50%", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontSize: 11 },
-  primary: { padding: "12px 26px", background: "#15803d", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer" },
-  secondary: { padding: "7px 16px", border: "2px solid #15803d", borderRadius: 8, background: "#fff", color: "#15803d", fontWeight: 700, cursor: "pointer" },
+  primary: { padding: "12px 26px", background: "#0d6b6e", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer" },
+  secondary: { padding: "7px 16px", border: "2px solid #0d6b6e", borderRadius: 8, background: "#fff", color: "#0d6b6e", fontWeight: 700, cursor: "pointer" },
   danger: { padding: "7px 16px", border: "2px solid #b91c1c", borderRadius: 8, background: "#fff", color: "#b91c1c", fontWeight: 700, cursor: "pointer" },
   chip: { padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700 },
   listing: { display: "flex", gap: 14, padding: 14, marginBottom: 10, border: "1px solid #e2e8f0", borderRadius: 14, background: "#fff" },

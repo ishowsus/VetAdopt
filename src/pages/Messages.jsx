@@ -1,3 +1,4 @@
+// FILE: src/pages/Messages.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -680,7 +681,7 @@ export default function Messages() {
 
 const CSS = `
 .ms-root {
-  --green: #15803d; --green-dark: #166534; --green-soft: #f0fdf4; --ink: #0f172a; --muted: #5b6b7f; --line: #e2e8f0;
+  --green: #0d6b6e; --green-dark: #0b5457; --green-soft: #ecf9f8; --ink: #0f172a; --muted: #5b6b7f; --line: #e2e8f0;
   display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
   height: 80vh; height: calc(100dvh - 120px); min-height: 520px; max-height: 920px;
   width: calc(100% - 32px); max-width: 1120px; margin: 20px auto;
@@ -696,14 +697,14 @@ const CSS = `
 .ms-title { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; }
 .ms-search { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 40px; border-radius: 999px; background: #f1f5f9; color: var(--muted); }
 .ms-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; font-size: .9rem; color: var(--ink); }
-.ms-search:focus-within { box-shadow: 0 0 0 3px #bbf7d0; }
+.ms-search:focus-within { box-shadow: 0 0 0 3px #b8e6e3; }
 .ms-list-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 12px; overscroll-behavior: contain; }
 .ms-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; margin-bottom: 2px; border: none; border-radius: 14px; background: transparent; text-align: left; cursor: pointer; transition: background .15s; }
 .ms-row:hover { background: #f8fafc; }
 .ms-row.active { background: var(--green-soft); box-shadow: inset 3px 0 0 var(--green); }
-.ms-row:focus-visible, .ms-icon-btn:focus-visible, .ms-jump:focus-visible, .ms-send:focus-visible, .ms-img-btn:focus-visible, .ms-pet:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
+.ms-row:focus-visible, .ms-icon-btn:focus-visible, .ms-jump:focus-visible, .ms-send:focus-visible, .ms-img-btn:focus-visible, .ms-pet:focus-visible { outline: 3px solid #19a3a1; outline-offset: 2px; }
 .ms-avatar { border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e2e8f0; }
-.ms-avatar-fallback { display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; font-weight: 700; }
+.ms-avatar-fallback { display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d6b6e, #0d6b6e); color: #fff; font-weight: 700; }
 .ms-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .ms-row-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .ms-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95rem; }
@@ -734,7 +735,7 @@ const CSS = `
 .ms-pet img { border-radius: 10px; object-fit: cover; flex-shrink: 0; }
 .ms-pet-main { display: flex; flex-direction: column; flex: 1; min-width: 0; font-size: .88rem; }
 .ms-pet-main span { color: var(--muted); font-size: .78rem; }
-.ms-pet-status { padding: 3px 10px; border-radius: 999px; background: #dcfce7; color: var(--green-dark); font-size: .72rem; font-weight: 700; }
+.ms-pet-status { padding: 3px 10px; border-radius: 999px; background: #d6f2f0; color: var(--green-dark); font-size: .72rem; font-weight: 700; }
 
 .ms-safety { margin: 0; padding: 8px 16px; background: #fffbeb; border-bottom: 1px solid #fde68a; color: #92400e; font-size: .78rem; flex-shrink: 0; }
 .ms-report { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; background: #fffbeb; border-bottom: 1px solid #fde68a; font-size: .86rem; flex-shrink: 0; }
@@ -746,10 +747,10 @@ const CSS = `
 
 /* the part that scrolls */
 .ms-scroll-area { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background:
-  radial-gradient(circle at 12% 8%, #dcfce7 0, transparent 38%),
+  radial-gradient(circle at 12% 8%, #d6f2f0 0, transparent 38%),
   radial-gradient(circle at 92% 92%, #e0f2fe 0, transparent 38%), #f8fafc; }
 .ms-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 16px 8px; display: flex; flex-direction: column; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
-.ms-messages:focus-visible { outline: 3px solid #22c55e; outline-offset: -3px; }
+.ms-messages:focus-visible { outline: 3px solid #19a3a1; outline-offset: -3px; }
 .ms-messages::-webkit-scrollbar { width: 8px; }
 .ms-messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
 
@@ -764,7 +765,7 @@ const CSS = `
 .ms-line.mine .ms-stack { align-items: flex-end; }
 .ms-msg { padding: 9px 14px; border-radius: 20px; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
 .ms-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
-.ms-msg.mine { background: linear-gradient(135deg, #15803d, #166534); color: #fff; border-bottom-right-radius: 6px; }
+.ms-msg.mine { background: linear-gradient(135deg, #0d6b6e, #0b5457); color: #fff; border-bottom-right-radius: 6px; }
 .ms-msg.theirs { background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 6px; }
 .ms-msg.mine:not(.is-first) { border-top-right-radius: 6px; }
 .ms-msg.theirs:not(.is-first) { border-top-left-radius: 6px; }
@@ -776,7 +777,7 @@ const CSS = `
 
 .ms-system { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 88%; margin: 12px 0 4px; padding: 8px 16px; border-radius: 14px; background: #e0f2fe; color: #075985; font-size: .85rem; text-align: center; }
 .ms-system time { font-size: .68rem; opacity: .75; }
-.ms-system-approved { background: #dcfce7; color: #166534; }
+.ms-system-approved { background: #d6f2f0; color: #0b5457; }
 .ms-system-rejected { background: #fee2e2; color: #991b1b; }
 .ms-system-info_requested { background: #fef3c7; color: #92400e; }
 
@@ -787,8 +788,8 @@ const CSS = `
 .ms-compose-wrap { border-top: 1px solid var(--line); background: #fff; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 0); }
 .ms-compose { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; }
 .ms-compose textarea { flex: 1; min-width: 0; resize: none; padding: 10px 16px; border: 1px solid var(--line); border-radius: 22px; background: #f8fafc; font: inherit; line-height: 1.4; max-height: 120px; outline: none; }
-.ms-compose textarea:focus { border-color: #22c55e; background: #fff; box-shadow: 0 0 0 3px #bbf7d0; }
-.ms-send { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: none; border-radius: 50%; background: linear-gradient(135deg, #15803d, #166534); color: #fff; cursor: pointer; flex-shrink: 0; transition: transform .1s; }
+.ms-compose textarea:focus { border-color: #19a3a1; background: #fff; box-shadow: 0 0 0 3px #b8e6e3; }
+.ms-send { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: none; border-radius: 50%; background: linear-gradient(135deg, #0d6b6e, #0b5457); color: #fff; cursor: pointer; flex-shrink: 0; transition: transform .1s; }
 .ms-send:hover:not(:disabled) { transform: scale(1.06); }
 .ms-send:disabled { opacity: .45; cursor: not-allowed; }
 .ms-spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: ms-spin .7s linear infinite; }

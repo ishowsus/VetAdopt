@@ -422,7 +422,8 @@ export default function ShelterProfile() {
       {tab === "verification" && (
         <VerificationPanel
           role="shelter"
-          documentLabel="Shelter registration"
+          documentLabel="Shelter registration and permits"
+          maxFiles={3}
           numberLabel="Registration number"
           uploadFile={uploadVerificationDoc}
         />

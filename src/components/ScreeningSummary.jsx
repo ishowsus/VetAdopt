@@ -1,9 +1,10 @@
+// FILE: src/components/ScreeningSummary.jsx
 import { evaluateScreening, labelOf } from "../utils/screening";
 
 const TONES = {
   concern: { bg: "#fef2f2", border: "#fca5a5", fg: "#991b1b" },
   review: { bg: "#fffbeb", border: "#fcd34d", fg: "#92400e" },
-  ready: { bg: "#f0fdf4", border: "#86efac", fg: "#166534" },
+  ready: { bg: "#ecf9f8", border: "#8fdcd8", fg: "#0b5457" },
 };
 const FLAG_ICON = { high: "⚠️", medium: "💬", info: "ℹ️" };
 
@@ -41,7 +42,7 @@ export default function ScreeningSummary({ screening, petType }) {
       )}
 
       {result.strengths.length > 0 && (
-        <p style={{ margin: "10px 0 0", color: "#166534" }}>
+        <p style={{ margin: "10px 0 0", color: "#0b5457" }}>
           <strong>Good signs: </strong>
           {result.strengths.join(" · ")}
         </p>

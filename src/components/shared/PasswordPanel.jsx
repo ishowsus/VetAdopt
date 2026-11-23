@@ -1,3 +1,4 @@
+// FILE: src/components/shared/PasswordPanel.jsx
 import { useState } from "react";
 import { auth } from "../../firebase"; // adjust path to your firebase.js
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
@@ -105,7 +106,7 @@ export default function PasswordPanel() {
         disabled={saving}
         style={{
           padding: "12px 22px",
-          background: "#2e7d32",
+          background: "#0d6b6e",
           color: "#fff",
           border: "none",
           borderRadius: 10,

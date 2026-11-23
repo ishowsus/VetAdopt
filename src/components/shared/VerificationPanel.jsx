@@ -1,3 +1,4 @@
+// FILE: src/components/shared/VerificationPanel.jsx
 import { useEffect, useState } from "react";
 import { auth, db } from "../../firebase"; // adjust path to your firebase.js
 import { sendEmailVerification } from "firebase/auth";
@@ -74,7 +75,8 @@ export function useVerification(uid) {
 /**
  * Props
  *  role            "adopter" | "vet" | "shelter"
- *  uploadFile      async (file, uid) => string   – uploads and returns a storage path/URL
+ *  uploadFile      async (file or [files], uid) => string   – saves the photo(s), returns a path label
+ *  maxFiles        how many photos can be sent at once (default 1)
  *  requireDocument false for adopters (email only)
  *  documentLabel   e.g. "Veterinary license"
  *  numberLabel     e.g. "License number" (omit to hide the field)
@@ -85,6 +87,7 @@ export default function VerificationPanel({
   uploadFile,
   requireDocument = true,
   documentLabel = "Supporting document",
+  maxFiles = 1,
   numberLabel = "",
   defaultNumber = "",
 }) {
@@ -97,7 +100,7 @@ export default function VerificationPanel({
   const [cooldown, setCooldown] = useState(0);
   const [emailMsg, setEmailMsg] = useState(null);
 
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [idNumber, setIdNumber] = useState(defaultNumber);
   const [submitting, setSubmitting] = useState(false);
   const [docMsg, setDocMsg] = useState(null);
@@ -169,19 +172,19 @@ export default function VerificationPanel({
   };
 
   const handleFile = (e) => {
-    const f = e.target.files?.[0];
+    const picked = [...(e.target.files || [])];
     e.target.value = "";
-    if (!f) return;
-    if (!ALLOWED_TYPES.includes(f.type)) {
-      setDocMsg({ type: "error", text: "Use a JPEG, PNG or WEBP photo of the document." });
+    if (picked.length === 0) return;
+    if (picked.some((f) => !ALLOWED_TYPES.includes(f.type))) {
+      setDocMsg({ type: "error", text: "Use JPEG, PNG or WEBP photos of the document." });
       return;
     }
-    if (f.size > MAX_BYTES) {
+    if (picked.some((f) => f.size > MAX_BYTES)) {
       setDocMsg({ type: "error", text: "That photo is too large (15 MB max)." });
       return;
     }
     setDocMsg(null);
-    setFile(f);
+    setFiles((cur) => [...cur, ...picked].slice(0, maxFiles));
   };
 
   const submitDocument = async () => {
@@ -190,26 +193,26 @@ export default function VerificationPanel({
       setDocMsg({ type: "error", text: `${numberLabel} is required.` });
       return;
     }
-    if (!file) {
-      setDocMsg({ type: "error", text: "Choose a document to upload." });
+    if (files.length === 0) {
+      setDocMsg({ type: "error", text: "Choose a photo to upload." });
       return;
     }
     setSubmitting(true);
     setDocMsg(null);
     try {
-      const documentPath = await withTimeout(uploadFile(file, user.uid), 45000, "Saving the photo took too long. Check your connection and try again.");
+      const documentPath = await withTimeout(uploadFile(maxFiles > 1 ? files : files[0], user.uid), 45000, "Saving the photo took too long. Check your connection and try again.");
       await withTimeout(setDoc(doc(db, "verifications", user.uid), {
         userId: user.uid,
         role,
         status: "pending",
         documentPath,
-        documentName: file.name,
+        documentName: files.map((f) => f.name).join(", ").slice(0, 120),
         idNumber: idNumber.trim(),
         submittedAt: serverTimestamp(),
         reviewNote: "",
       }), 20000, "Sending your request took too long. Check your connection and try again.");
       notifyAdmins(user.displayName || user.email || "Someone", role).catch(() => {});
-      setFile(null);
+      setFiles([]);
       setDocMsg({ type: "ok", text: "Submitted. We'll review it and update your status here." });
     } catch (err) {
       console.error(err);
@@ -309,15 +312,23 @@ export default function VerificationPanel({
               )}
 
               <div style={{ marginTop: 12 }}>
-                <label htmlFor="ver-file" style={s.label}>Photo of the document (JPEG, PNG or WEBP)</label>
+                <label htmlFor="ver-file" style={s.label}>
+                  {maxFiles > 1 ? `Photos of your documents (up to ${maxFiles}; JPEG, PNG or WEBP)` : "Photo of the document (JPEG, PNG or WEBP)"}
+                </label>
                 <input
                   id="ver-file"
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
+                  multiple={maxFiles > 1}
                   onChange={handleFile}
-                  disabled={!emailVerified}
+                  disabled={!emailVerified || files.length >= maxFiles}
                 />
-                {file && <p style={{ ...s.sub, margin: "6px 0 0" }}>Selected: {file.name}</p>}
+                {files.map((f, i) => (
+                  <p key={`${f.name}-${i}`} style={{ ...s.sub, margin: "6px 0 0" }}>
+                    {f.name}{" "}
+                    <button type="button" onClick={() => setFiles((cur) => cur.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`} style={{ background: "none", border: "none", color: "#b91c1c", cursor: "pointer", textDecoration: "underline" }}>Remove</button>
+                  </p>
+                ))}
               </div>
 
               <div style={{ marginTop: 14 }}>
@@ -362,10 +373,10 @@ const s = {
     background: "#fff8e1",
     marginBottom: 16,
   },
-  summaryOk: { background: "#e8f5e9" },
+  summaryOk: { background: "#d6f2f0" },
   card: {
     background: "#f8f9fa",
-    borderLeft: "5px solid #2e7d32",
+    borderLeft: "5px solid #0d6b6e",
     borderRadius: 12,
     padding: "16px 18px",
     marginBottom: 14,
@@ -385,7 +396,7 @@ const s = {
   },
   primary: {
     padding: "10px 18px",
-    background: "#2e7d32",
+    background: "#0d6b6e",
     color: "#fff",
     border: "none",
     borderRadius: 10,
@@ -396,8 +407,8 @@ const s = {
   secondary: {
     padding: "10px 18px",
     background: "#fff",
-    color: "#2e7d32",
-    border: "2px solid #2e7d32",
+    color: "#0d6b6e",
+    border: "2px solid #0d6b6e",
     borderRadius: 10,
     fontSize: 14,
     fontWeight: 600,

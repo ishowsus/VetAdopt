@@ -1,3 +1,4 @@
+// FILE: src/pages/Veterinarian/VetProfile.jsx
 import { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
 import { saveVerificationFile } from "../../utils/verificationFile";
@@ -469,7 +470,8 @@ function VetProfile() {
             </p>
             <VerificationPanel
               role="vet"
-              documentLabel="Veterinary license"
+              documentLabel="Veterinary license and documents"
+              maxFiles={3}
               numberLabel="License number"
               defaultNumber={profile.licenseNumber}
               uploadFile={uploadVerificationDoc}
@@ -529,7 +531,7 @@ const styles = {
   },
 
   header: {
-    background: "#2e7d32",
+    background: "#0d6b6e",
     color: "#fff",
     textAlign: "center",
     padding: "40px",
@@ -572,8 +574,8 @@ const styles = {
   },
 
   tabActive: {
-    color: "#2e7d32",
-    borderBottomColor: "#2e7d32",
+    color: "#0d6b6e",
+    borderBottomColor: "#0d6b6e",
   },
 
   errorBanner: {
@@ -596,7 +598,7 @@ const styles = {
     background: "#f8f9fa",
     padding: "20px",
     borderRadius: "12px",
-    borderLeft: "5px solid #2e7d32",
+    borderLeft: "5px solid #0d6b6e",
   },
 
   infoBoxLabel: {
@@ -630,7 +632,7 @@ const styles = {
 
   locationText: {
     fontSize: "14px",
-    color: "#2e7d32",
+    color: "#0d6b6e",
     fontWeight: 600,
     margin: "10px 0 0",
   },
@@ -670,7 +672,7 @@ const styles = {
     background: "#f8f9fa",
     borderRadius: "12px",
     padding: "14px 16px",
-    borderLeft: "5px solid #2e7d32",
+    borderLeft: "5px solid #0d6b6e",
   },
 
   dayLabel: {
@@ -697,8 +699,8 @@ const styles = {
   },
 
   slotChipActive: {
-    background: "#2e7d32",
-    borderColor: "#2e7d32",
+    background: "#0d6b6e",
+    borderColor: "#0d6b6e",
     color: "#fff",
   },
 
@@ -711,7 +713,7 @@ const styles = {
   button: {
     flex: 1,
     padding: "14px",
-    background: "#2e7d32",
+    background: "#0d6b6e",
     color: "#fff",
     border: "none",
     borderRadius: "10px",
@@ -723,8 +725,8 @@ const styles = {
   secondaryButton: {
     padding: "12px 18px",
     background: "#fff",
-    color: "#2e7d32",
-    border: "2px solid #2e7d32",
+    color: "#0d6b6e",
+    border: "2px solid #0d6b6e",
     borderRadius: "10px",
     fontSize: "14px",
     fontWeight: 600,
@@ -735,8 +737,8 @@ const styles = {
     flex: 1,
     padding: "14px",
     background: "#fff",
-    color: "#2e7d32",
-    border: "2px solid #2e7d32",
+    color: "#0d6b6e",
+    border: "2px solid #0d6b6e",
     borderRadius: "10px",
     fontSize: "16px",
     fontWeight: 600,

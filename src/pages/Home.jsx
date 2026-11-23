@@ -1,3 +1,4 @@
+// FILE: src/pages/Home.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import NearbyMap from "../components/NearbyMap";
@@ -11,14 +12,14 @@ const PETS = [
 
 const FEATURES = [
   { icon: "", title: "Veterinary-Certified Profiles", desc: "Every listed animal undergoes comprehensive health screening, vaccination, and spay/neuter status checks." },
-  { icon: "", title: "Smart Matchmaker Engine", desc: "Our algorithm matches adopters with pets based on living space, lifestyle, schedule, and experience level." },
+  { icon: "", title: "Pet Care Guides", desc: "Step-by-step grooming and daily care advice for dogs, cats, rabbits, and birds, so every adopted pet starts healthy." },
   { icon: "", title: "Verified Partner Shelters", desc: "Direct network integration with registered animal welfare organizations and municipal pounds across Metro Cebu." },
   { icon: "", title: "Post-Adoption Tracking", desc: "Digital health logs and reminder schedules for vaccines, check-ups, and post-adoption wellness follow-ups." },
 ];
 
 const TESTIMONIALS = [
   { id: 1, name: "Maria Santos", location: "Cebu City", img: "https://randomuser.me/api/portraits/women/68.jpg", text: "VetAdopt gave us complete confidence. Seeing Bella's full medical records and vet verification before adopting made the entire transition smooth and worry-free." },
-  { id: 2, name: "James Reyes", location: "Mandaue City", img: "https://randomuser.me/api/portraits/men/72.jpg", text: "The Matchmaker Quiz recommended Max based on our apartment rules and daily schedule. He fit into our routine seamlessly from day one." },
+  { id: 2, name: "James Reyes", location: "Mandaue City", img: "https://randomuser.me/api/portraits/men/72.jpg", text: "The shelter helped us pick Max based on our apartment rules and daily schedule. He fit into our routine seamlessly from day one." },
   { id: 3, name: "Sofia Lim", location: "Lapu-Lapu City", img: "https://randomuser.me/api/portraits/women/65.jpg", text: "As a first-time pet owner, having ongoing vet support reminders directly through VetAdopt's platform was a lifesaver!" },
 ];
 
@@ -160,11 +161,11 @@ export default function Home() {
         .va-d3 { transition-delay:0.24s; } .va-d4 { transition-delay:0.32s; }
 
         /* ── Buttons ── */
-        .va-btn-primary { display:inline-flex; align-items:center; gap:8px; padding:15px 30px; border-radius:14px; border:none; background:linear-gradient(135deg,#3fa34d,#2e7d32); color:#fff; font-weight:700; font-size:0.95rem; cursor:pointer; transition:all 0.25s; box-shadow:0 8px 20px rgba(46,125,50,0.3); }
+        .va-btn-primary { display:inline-flex; align-items:center; gap:8px; padding:15px 30px; border-radius:14px; border:none; background:linear-gradient(135deg,#3fa34d,#0d6b6e); color:#fff; font-weight:700; font-size:0.95rem; cursor:pointer; transition:all 0.25s; box-shadow:0 8px 20px rgba(46,125,50,0.3); }
         .va-btn-primary:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(46,125,50,0.4); }
         .va-btn-ghost { display:inline-flex; align-items:center; gap:8px; padding:15px 30px; border-radius:14px; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); color:#fff; font-weight:700; font-size:0.95rem; cursor:pointer; transition:all 0.25s; }
         .va-btn-ghost:hover { background:rgba(255,255,255,0.18); }
-        .va-btn-ghost.dark { border-color:#d5e3d5; background:#fff; color:#2e7d32; }
+        .va-btn-ghost.dark { border-color:#d5e3d5; background:#fff; color:#0d6b6e; }
         .va-btn-ghost.dark:hover { background:#f2f8f2; }
 
         /* ── Navbar ── */
@@ -187,8 +188,8 @@ export default function Home() {
         /* ── Hero ── */
         .va-hero { position:relative; min-height:100vh; display:flex; align-items:center; background:linear-gradient(150deg,#051407 0%,#0d2e12 50%,#07200d 100%); padding:130px 24px 80px; overflow:hidden; }
         .va-hero-glow { position:absolute; width:560px; height:560px; border-radius:50%; filter:blur(120px); opacity:0.35; pointer-events:none; }
-        .va-glow-1 { background:#2e7d32; top:-160px; right:-100px; }
-        .va-glow-2 { background:#1b5e20; bottom:-200px; left:-140px; }
+        .va-glow-1 { background:#0d6b6e; top:-160px; right:-100px; }
+        .va-glow-2 { background:#0a3d40; bottom:-200px; left:-140px; }
         .va-hero-inner { position:relative; z-index:2; max-width:1160px; margin:0 auto; display:grid; grid-template-columns:1.05fr 0.95fr; gap:60px; align-items:center; width:100%; }
         .va-hero-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(129,199,132,0.12); border:1px solid rgba(129,199,132,0.35); border-radius:99px; padding:8px 18px; font-size:0.75rem; font-weight:700; color:#a5d6a7; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:22px; }
         .va-hero h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(2.6rem,5.4vw,4.4rem); font-weight:700; color:#fff; line-height:1.08; margin-bottom:18px; }
@@ -213,7 +214,7 @@ export default function Home() {
         .va-float { position:absolute; background:rgba(255,255,255,0.96); border-radius:16px; padding:14px 18px; box-shadow:0 16px 40px rgba(0,0,0,0.3); backdrop-filter:blur(8px); animation:va-bob 5s ease-in-out infinite; }
         .va-float strong { display:block; font-size:0.85rem; color:#16211a; }
         .va-float small { font-size:0.72rem; color:#7a8a7d; font-weight:600; }
-        .va-float-1 { top:22px; left:-26px; display:flex; align-items:center; gap:8px; color:#2e7d32; font-weight:800; font-size:0.85rem; animation-delay:0.5s; }
+        .va-float-1 { top:22px; left:-26px; display:flex; align-items:center; gap:8px; color:#0d6b6e; font-weight:800; font-size:0.85rem; animation-delay:0.5s; }
         .va-float-2 { bottom:88px; right:-22px; }
         .va-float-3 { bottom:-20px; left:36px; animation-delay:1s; }
         @keyframes va-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
@@ -248,7 +249,7 @@ export default function Home() {
         .va-pets { max-width:1120px; margin:0 auto; padding:0 24px 96px; }
         .va-pets-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:26px; gap:16px; flex-wrap:wrap; }
         .va-pets-head h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(2rem,4vw,2.6rem); color:#14231a; margin-top:6px; }
-        .va-pets-head .va-link { background:none; border:none; color:#2e7d32; font-weight:700; font-size:0.9rem; cursor:pointer; padding:0; }
+        .va-pets-head .va-link { background:none; border:none; color:#0d6b6e; font-weight:700; font-size:0.9rem; cursor:pointer; padding:0; }
         .va-pets-head .va-link:hover { text-decoration:underline; }
         .va-carousel-inner { display:grid; grid-template-columns:1fr 1fr; border-radius:26px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.1); background:#fff; border:1px solid #e8ece8; }
         .va-car-img { position:relative; min-height:420px; }
@@ -256,17 +257,17 @@ export default function Home() {
         .va-img.on { opacity:1; }
         .va-car-badge { position:absolute; top:18px; left:18px; background:rgba(6,20,9,0.75); backdrop-filter:blur(6px); color:#fff; padding:6px 14px; border-radius:99px; font-size:0.72rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
         .va-arrow { position:absolute; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); color:#16211a; font-size:1.1rem; cursor:pointer; transition:all 0.2s; box-shadow:0 6px 16px rgba(0,0,0,0.2); z-index:3; }
-        .va-arrow:hover { background:#2e7d32; color:#fff; }
+        .va-arrow:hover { background:#0d6b6e; color:#fff; }
         .va-arrow.left { left:16px; } .va-arrow.right { right:16px; }
         .va-carousel-info { padding:48px; display:flex; flex-direction:column; justify-content:center; }
-        .va-health-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:#e8f5e9; color:#2e7d32; border-radius:99px; font-size:0.75rem; font-weight:700; margin-bottom:14px; width:fit-content; }
+        .va-health-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:#d6f2f0; color:#0d6b6e; border-radius:99px; font-size:0.75rem; font-weight:700; margin-bottom:14px; width:fit-content; }
         .va-carousel-info h3 { font-family:'Cormorant Garamond',serif; font-size:2.6rem; margin-bottom:4px; color:#14231a; }
         .va-pet-meta { color:#8a978c; font-size:0.85rem; font-weight:600; margin-bottom:16px; }
         .va-pet-desc { color:#555f58; font-size:0.95rem; line-height:1.7; margin-bottom:26px; }
         .va-pet-actions { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
         .va-dots { display:flex; gap:7px; }
         .va-dot { width:8px; height:8px; border-radius:99px; border:none; background:#cfd8cf; cursor:pointer; transition:all 0.3s; padding:0; }
-        .va-dot.on { width:26px; background:#2e7d32; }
+        .va-dot.on { width:26px; background:#0d6b6e; }
 
         /* ── How it works ── */
         .va-how { background:linear-gradient(150deg,#0d2e12,#081d0c); color:#fff; padding:96px 24px; position:relative; overflow:hidden; }
@@ -285,13 +286,13 @@ export default function Home() {
         .va-stars { color:#f5b301; letter-spacing:3px; margin-bottom:18px; font-size:1rem; }
         .va-test-body { animation:va-pop 0.5s ease both; }
         .va-test-text { font-family:'Cormorant Garamond',serif; font-style:italic; color:#2c3a30; font-size:1.35rem; line-height:1.5; margin-bottom:22px; }
-        .va-test-card img { width:64px; height:64px; border-radius:50%; margin-bottom:12px; border:3px solid #e8f5e9; object-fit:cover; }
-        .va-test-name { font-weight:700; color:#2e7d32; }
+        .va-test-card img { width:64px; height:64px; border-radius:50%; margin-bottom:12px; border:3px solid #d6f2f0; object-fit:cover; }
+        .va-test-name { font-weight:700; color:#0d6b6e; }
         .va-test-loc { font-size:0.8rem; color:#8a978c; margin-bottom:22px; }
         @keyframes va-pop { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
         .va-test-nav { display:flex; align-items:center; justify-content:center; gap:18px; margin-top:26px; }
         .va-test-nav .va-arrow { position:static; transform:none; width:38px; height:38px; background:#fff; border:1px solid #e0e8e0; box-shadow:none; }
-        .va-test-nav .va-arrow:hover { background:#2e7d32; color:#fff; }
+        .va-test-nav .va-arrow:hover { background:#0d6b6e; color:#fff; }
 
         /* ── CTA ── */
         .va-cta { padding:0 24px 96px; background:#f6faf6; }
@@ -339,7 +340,7 @@ export default function Home() {
           <button className="va-brand" onClick={() => navigate("/")}>Vet<em>Adopt</em></button>
           <nav className="va-links">
             <button onClick={() => navigate("/adopt")}>Adopt</button>
-            <button onClick={() => navigate("/petmatchmaker")}>Matchmaker</button>
+            <button onClick={() => navigate("/pet-care")}>Pet Care</button>
             <a href="#how">How It Works</a>
             <a href="#stories">Stories</a>
           </nav>
@@ -351,7 +352,7 @@ export default function Home() {
         </div>
         <div className={menuOpen ? "va-mobile-menu open" : "va-mobile-menu"}>
           <button onClick={() => go("/adopt")}>Adopt</button>
-          <button onClick={() => go("/petmatchmaker")}>Matchmaker</button>
+          <button onClick={() => go("/pet-care")}>Pet Care</button>
           <a href="#how" onClick={() => setMenuOpen(false)}>How It Works</a>
           <a href="#stories" onClick={() => setMenuOpen(false)}>Stories</a>
           <button onClick={() => go("/login")}>Sign In</button>
@@ -386,7 +387,7 @@ export default function Home() {
             </div>
 
             <div className="va-hero-actions">
-              <button className="va-btn-ghost" onClick={() => navigate("/petmatchmaker")}>🎯Take the Matchmaker Quiz</button>
+              <button className="va-btn-ghost" onClick={() => navigate("/pet-care")}>🐾 Pet Care Guide</button>
             </div>
 
             <div className="va-hero-trust">
@@ -504,8 +505,8 @@ export default function Home() {
           </div>
           <div className="va-step va-reveal va-d2">
             <div className="va-step-num">2</div>
-            <h3>Match & Application</h3>
-            <p>Adopters complete the lifestyle matchmaker and submit a digital application form online.</p>
+            <h3>Visit & Application</h3>
+            <p>Adopters meet the pet at the shelter and submit a digital application that shares their home and routine.</p>
           </div>
           <div className="va-step va-reveal va-d3">
             <div className="va-step-num">3</div>
@@ -545,10 +546,10 @@ export default function Home() {
       <section className="va-cta">
         <div className="va-cta-card va-reveal">
           <h2>Ready to meet your new best friend?</h2>
-          <p>Browse vet-verified pets near you, or let the Matchmaker Quiz find the perfect companion for your lifestyle.</p>
+          <p>Browse vet-verified pets near you, or read our care guide to get ready for your new companion.</p>
           <div className="va-cta-actions">
             <button className="va-btn-primary" onClick={() => navigate("/adopt")}>Browse Adoptable Pets 🐾</button>
-            <button className="va-btn-ghost" onClick={() => navigate("/petmatchmaker")}>Take the Matchmaker Quiz 🎯</button>
+            <button className="va-btn-ghost" onClick={() => navigate("/pet-care")}>Read the Pet Care Guide 🐾</button>
           </div>
         </div>
       </section>

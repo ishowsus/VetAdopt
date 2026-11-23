@@ -1,6 +1,7 @@
+// FILE: src/pages/admin/Verifications.jsx
 import { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
-import { loadVerificationFile, deleteVerificationFile, dataUrlToBlobUrl } from "../../utils/verificationFile";
+import { loadVerificationFiles, deleteVerificationFile, dataUrlToBlobUrl } from "../../utils/verificationFile";
 import {
   collection,
   query,
@@ -91,9 +92,9 @@ export default function Verifications() {
   const togglePreview = async (item) => {
     if (previews[item.id]) return setPreviews((p) => ({ ...p, [item.id]: "" }));
     try {
-      const url = await loadVerificationFile(item.id);
-      if (!url) throw new Error("missing");
-      setPreviews((p) => ({ ...p, [item.id]: url }));
+      const list = await loadVerificationFiles(item.id);
+      if (list.length === 0) throw new Error("missing");
+      setPreviews((p) => ({ ...p, [item.id]: list }));
     } catch (err) {
       console.error(err);
       setError("Couldn't load that photo. It may have been deleted, or the rules don't let admins read it yet.");
@@ -103,9 +104,9 @@ export default function Verifications() {
   const viewDocument = async (item) => {
     const w = window.open("about:blank", "_blank"); // open first so popup blockers allow it
     try {
-      const url = await loadVerificationFile(item.id);
-      if (!url) throw new Error("missing");
-      if (w) w.location.href = dataUrlToBlobUrl(url);
+      const list = await loadVerificationFiles(item.id);
+      if (list.length === 0) throw new Error("missing");
+      if (w) w.location.href = dataUrlToBlobUrl(list[0].url);
     } catch (err) {
       console.error(err);
       if (w) w.close();
@@ -170,16 +171,16 @@ export default function Verifications() {
             style={{
               padding: "8px 16px",
               borderRadius: 999,
-              border: "1px solid #2e7d32",
-              background: filter === f.key ? "#2e7d32" : "#fff",
-              color: filter === f.key ? "#fff" : "#2e7d32",
+              border: "1px solid #0d6b6e",
+              background: filter === f.key ? "#0d6b6e" : "#fff",
+              color: filter === f.key ? "#fff" : "#0d6b6e",
               fontWeight: 600,
               cursor: "pointer",
             }}
           >
             {f.label}
             {f.key === "pending" && pendingCount > 0 && (
-              <span style={{ marginLeft: 8, padding: "1px 8px", borderRadius: 999, background: filter === "pending" ? "#fff" : "#dc2626", color: filter === "pending" ? "#2e7d32" : "#fff", fontSize: 12, fontWeight: 700 }}>
+              <span style={{ marginLeft: 8, padding: "1px 8px", borderRadius: 999, background: filter === "pending" ? "#fff" : "#dc2626", color: filter === "pending" ? "#0d6b6e" : "#fff", fontSize: 12, fontWeight: 700 }}>
                 {pendingCount}
               </span>
             )}
@@ -209,7 +210,7 @@ export default function Verifications() {
         visible.map((item) => {
           const p = people[item.id] || {};
           return (
-            <div key={item.id} style={{ background: "#fff", borderRadius: 14, padding: 18, marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,.07)", borderLeft: "5px solid #2e7d32" }}>
+            <div key={item.id} style={{ background: "#fff", borderRadius: 14, padding: 18, marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,.07)", borderLeft: "5px solid #0d6b6e" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
                   <strong>{p.name || "Loading…"}</strong>
@@ -236,7 +237,7 @@ export default function Verifications() {
                         {item.documentName || "Open document"}
                       </button>
                       {isImage(item) && (
-                        <button type="button" onClick={() => togglePreview(item)} style={{ marginLeft: 12, background: "none", border: "none", color: "#2e7d32", cursor: "pointer", padding: 0, fontWeight: 600, fontSize: 14 }}>
+                        <button type="button" onClick={() => togglePreview(item)} style={{ marginLeft: 12, background: "none", border: "none", color: "#0d6b6e", cursor: "pointer", padding: 0, fontWeight: 600, fontSize: 14 }}>
                           {previews[item.id] ? "Hide preview" : "👁 Preview here"}
                         </button>
                       )}
@@ -253,8 +254,14 @@ export default function Verifications() {
                 )}
               </dl>
 
-              {previews[item.id] && (
-                <img src={previews[item.id]} alt={`Submitted document from ${p.name || "applicant"}`} style={{ maxWidth: "100%", maxHeight: 380, borderRadius: 10, margin: "0 0 12px", border: "1px solid #e2e8f0" }} />
+              {previews[item.id]?.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "0 0 12px" }}>
+                  {previews[item.id].map((f, i) => (
+                    <a key={`${f.name}-${i}`} href={f.url} onClick={(e) => { e.preventDefault(); window.open(dataUrlToBlobUrl(f.url), "_blank"); }} title="Open full size">
+                      <img src={f.url} alt={`Document ${i + 1} from ${p.name || "applicant"}`} style={{ maxWidth: "100%", maxHeight: 340, borderRadius: 10, border: "1px solid #e2e8f0" }} />
+                    </a>
+                  ))}
+                </div>
               )}
 
               {item.status === "pending" && (
@@ -267,7 +274,7 @@ export default function Verifications() {
                     style={{ width: "100%", padding: "10px 12px", border: "1px solid #cfd8dc", borderRadius: 8, boxSizing: "border-box", marginBottom: 10 }}
                   />
                   <div style={{ display: "flex", gap: 10 }}>
-                    <button type="button" disabled={busyId === item.id} onClick={() => decide(item, "verified")} style={{ padding: "10px 18px", background: "#2e7d32", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>
+                    <button type="button" disabled={busyId === item.id} onClick={() => decide(item, "verified")} style={{ padding: "10px 18px", background: "#0d6b6e", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>
                       Approve
                     </button>
                     <button type="button" disabled={busyId === item.id} onClick={() => decide(item, "rejected")} style={{ padding: "10px 18px", background: "#fff", color: "#b91c1c", border: "2px solid #b91c1c", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>

@@ -1,3 +1,4 @@
+// FILE: src/pages/VetMap.jsx
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMap } from "react-leaflet";
@@ -16,7 +17,7 @@ const SERVICES = ["General Checkup", "Vaccination", "Surgery", "Grooming", "Dent
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const STATUS_STYLE = {
-  confirmed: { bg: "#e8f5e9", color: "#2e7d32" },
+  confirmed: { bg: "#d6f2f0", color: "#0d6b6e" },
   pending: { bg: "#fff8e1", color: "#f57f17" },
   completed: { bg: "#e3f2fd", color: "#1565c0" },
   cancelled: { bg: "#ffebee", color: "#c62828" },
@@ -320,7 +321,7 @@ export default function VetMap() {
 
         /* ── Topbar ── */
         .vm-topbar {
-          background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%);
+          background:linear-gradient(135deg,#0a3d40 0%,#0d6b6e 100%);
           padding:0 28px; height:66px; display:flex; align-items:center;
           justify-content:space-between; flex-shrink:0;
           box-shadow:0 4px 20px rgba(0,0,0,0.15);
@@ -328,15 +329,15 @@ export default function VetMap() {
         .vm-brand { display:flex; align-items:center; gap:10px; }
         .vm-brand-icon { font-size:1.5rem; }
         .vm-kind-row { display:flex; gap:6px; margin-bottom:10px; }
-        .vm-kind { flex:1; padding:7px 4px; border-radius:999px; border:1px solid #cfe3cf; background:#fff; color:#2e7d32; font-weight:700; font-size:0.78rem; cursor:pointer; font-family:inherit; }
-        .vm-kind.on { background:#2e7d32; border-color:#2e7d32; color:#fff; }
+        .vm-kind { flex:1; padding:7px 4px; border-radius:999px; border:1px solid #cfe3cf; background:#fff; color:#0d6b6e; font-weight:700; font-size:0.78rem; cursor:pointer; font-family:inherit; }
+        .vm-kind.on { background:#0d6b6e; border-color:#0d6b6e; color:#fff; }
         .vm-vet-card.shelter { border-left:4px solid #1d4ed8; }
         .vm-kind-tag { display:inline-block; margin:2px 0 6px; padding:2px 10px; border-radius:999px; background:#dbeafe; color:#1e40af; font-size:0.7rem; font-weight:700; }
         .vm-shelter-btn { background:#1d4ed8 !important; }
-        .vm-verified { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:6px; border-radius:50%; background:#2e7d32; color:#fff; font-size:0.6rem; vertical-align:middle; }
+        .vm-verified { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:6px; border-radius:50%; background:#0d6b6e; color:#fff; font-size:0.6rem; vertical-align:middle; }
         .vm-dir-row { display:flex; gap:8px; margin-top:8px; }
-        .vm-dir-btn { flex:1; text-align:center; padding:8px 6px; border:2px solid #2e7d32; border-radius:10px; background:#fff; color:#2e7d32; font-weight:700; font-size:0.78rem; cursor:pointer; text-decoration:none; font-family:inherit; }
-        .vm-dir-btn:hover { background:#f1f8f1; }
+        .vm-dir-btn { flex:1; text-align:center; padding:8px 6px; border:2px solid #0d6b6e; border-radius:10px; background:#fff; color:#0d6b6e; font-weight:700; font-size:0.78rem; cursor:pointer; text-decoration:none; font-family:inherit; }
+        .vm-dir-btn:hover { background:#ecf9f8; }
         .vm-shelter-pin-wrap { background:none; border:none; }
         .vm-shelter-pin { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:#1d4ed8; border:3px solid #fff; box-shadow:0 3px 10px rgba(0,0,0,.35); font-size:16px; }
         .vm-route-bar { position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:1000; width:min(560px, calc(100% - 24px)); display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 14px; background:#fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:0.85rem; }
@@ -356,7 +357,7 @@ export default function VetMap() {
           cursor:pointer; transition:all 0.2s; font-family:'Sora',sans-serif;
           background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.75);
         }
-        .vm-tab.active { background:white; color:#1b5e20; }
+        .vm-tab.active { background:white; color:#0a3d40; }
         .vm-tab-count {
           display:inline-flex; align-items:center; justify-content:center;
           width:20px; height:20px; border-radius:50%; background:#ffb300;
@@ -384,7 +385,7 @@ export default function VetMap() {
           width:100%; padding:12px 16px; border:2px solid #e8f0e8; border-radius:12px;
           font-size:0.88rem; font-family:'Sora',sans-serif; outline:none; transition:0.2s;
         }
-        .vm-search:focus { border-color:#2e7d32; }
+        .vm-search:focus { border-color:#0d6b6e; }
 
         .vm-vet-list { flex:1; overflow-y:auto; padding:14px; }
         .vm-vet-card {
@@ -393,17 +394,17 @@ export default function VetMap() {
           animation:slideIn 0.3s ease both;
         }
         .vm-vet-card:hover { border-color:#a5d6a7; box-shadow:0 6px 18px rgba(46,125,50,0.08); transform:translateX(4px); }
-        .vm-vet-card.active { border-color:#2e7d32; background:#f9fff9; }
+        .vm-vet-card.active { border-color:#0d6b6e; background:#f9fff9; }
         .vm-vet-name { font-weight:800; font-size:0.95rem; color:#1a2e1a; margin-bottom:4px; }
         .vm-vet-info { font-size:0.78rem; color:#81a881; margin-bottom:2px; display:flex; align-items:center; gap:5px; }
         .vm-vet-open { display:inline-block; margin:8px 0 10px; padding:3px 10px; border-radius:99px; font-size:0.7rem; font-weight:700; }
         .vm-vet-open.h24 { background:#fce4ec; color:#c62828; }
-        .vm-vet-open.std { background:#e8f5e9; color:#2e7d32; }
+        .vm-vet-open.std { background:#d6f2f0; color:#0d6b6e; }
         .vm-vet-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
-        .vm-tag { padding:3px 10px; background:#f1f8f1; color:#557055; border-radius:99px; font-size:0.68rem; font-weight:700; }
+        .vm-tag { padding:3px 10px; background:#ecf9f8; color:#557055; border-radius:99px; font-size:0.68rem; font-weight:700; }
         .vm-book-btn {
           width:100%; padding:11px; border-radius:12px; border:none;
-          background:linear-gradient(135deg,#2e7d32,#1b5e20); color:white;
+          background:linear-gradient(135deg,#0d6b6e,#0a3d40); color:white;
           font-weight:800; font-size:0.82rem; cursor:pointer;
           font-family:'Sora',sans-serif; transition:all 0.2s;
         }
@@ -433,7 +434,7 @@ export default function VetMap() {
           letter-spacing:0.06em; margin-bottom:14px;
         }
         .vm-appt-vet { font-weight:800; font-size:1rem; color:#1a2e1a; margin-bottom:4px; }
-        .vm-appt-service { font-size:0.82rem; color:#2e7d32; font-weight:700; margin-bottom:10px; }
+        .vm-appt-service { font-size:0.82rem; color:#0d6b6e; font-weight:700; margin-bottom:10px; }
         .vm-appt-meta { font-size:0.8rem; color:#888; display:flex; flex-direction:column; gap:4px; }
         .vm-cancel-btn {
           margin-top:16px; background:none; border:none; color:#d32f2f;
@@ -468,7 +469,7 @@ export default function VetMap() {
         .vm-modal-close:hover { background:#eee; }
         .vm-modal-vet-strip {
           display:flex; align-items:center; gap:12px; padding:14px;
-          background:#f1f8f1; border-radius:14px; margin-bottom:24px;
+          background:#ecf9f8; border-radius:14px; margin-bottom:24px;
         }
         .vm-modal-vet-icon { font-size:2rem; }
         .vm-modal-vet-name { font-weight:800; color:#1a2e1a; font-size:0.95rem; }
@@ -476,12 +477,12 @@ export default function VetMap() {
         .vm-modal-title { font-family:'DM Serif Display',serif; font-size:1.6rem; color:#1a2e1a; margin-bottom:4px; }
         .vm-modal-sub { font-size:0.83rem; color:#9aaa9a; margin-bottom:20px; }
 
-        .vm-label { display:block; font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#2e7d32; margin-bottom:6px; margin-top:18px; }
+        .vm-label { display:block; font-size:0.7rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#0d6b6e; margin-bottom:6px; margin-top:18px; }
         .vm-select, .vm-date-input, .vm-textarea, .vm-text-input {
           width:100%; padding:12px 14px; border:2px solid #e8f0e8; border-radius:12px;
           font-size:0.9rem; font-family:'Sora',sans-serif; color:#1a2e1a; outline:none; transition:0.2s;
         }
-        .vm-select:focus, .vm-date-input:focus, .vm-textarea:focus, .vm-text-input:focus { border-color:#2e7d32; }
+        .vm-select:focus, .vm-date-input:focus, .vm-textarea:focus, .vm-text-input:focus { border-color:#0d6b6e; }
         .vm-textarea { resize:vertical; min-height:80px; }
 
         .vm-time-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
@@ -490,13 +491,13 @@ export default function VetMap() {
           text-align:center; cursor:pointer; font-size:0.78rem; font-weight:700;
           transition:all 0.18s; font-family:'Sora',sans-serif; background:white; color:#557055;
         }
-        .vm-time-chip:hover { border-color:#81c784; background:#f1f8f1; }
-        .vm-time-chip.active { background:#2e7d32; color:white; border-color:#2e7d32; }
+        .vm-time-chip:hover { border-color:#81c784; background:#ecf9f8; }
+        .vm-time-chip.active { background:#0d6b6e; color:white; border-color:#0d6b6e; }
         .vm-time-empty { font-size:0.82rem; color:#9aaa9a; padding:8px 2px; }
         .vm-modal-error { font-size:0.8rem; color:#c62828; font-weight:600; margin-top:12px; }
         .vm-confirm-btn {
           width:100%; padding:15px; border-radius:14px; border:none; margin-top:20px;
-          background:linear-gradient(135deg,#2e7d32,#1b5e20); color:white;
+          background:linear-gradient(135deg,#0d6b6e,#0a3d40); color:white;
           font-size:0.92rem; font-weight:800; cursor:pointer;
           font-family:'Sora',sans-serif; transition:all 0.25s;
         }
@@ -640,7 +641,7 @@ export default function VetMap() {
                       style={{ animationDelay: `${i * 60}ms` }}
                       onClick={() => setActiveVet(v)}
                     >
-                      <div className="vm-vet-name">{displayName}</div>
+                      <div className="vm-vet-name">{displayName}{v.isVerified && <span className="vm-verified" title="Licensed and verified" aria-label="Licensed and verified">✓</span>}</div>
                       {v.address && <div className="vm-vet-info">📍 {v.address}</div>}
                       {v.phone && <div className="vm-vet-info">📞 {v.phone}</div>}
                       <div className="vm-vet-info">📏 {v.distance} km away</div>
@@ -700,7 +701,7 @@ export default function VetMap() {
                   <Marker key={v.id} position={[v.lat, v.lng]} icon={vetIcon} eventHandlers={{ click: () => setActiveVet(v) }}>
                     <Popup>
                       <div>
-                        <strong style={{ color: "#2e7d32", fontFamily: "'Sora',sans-serif" }}>
+                        <strong style={{ color: "#0d6b6e", fontFamily: "'Sora',sans-serif" }}>
                           {v.clinicName || v.name}
                         </strong>
                         <p style={{ fontSize: "0.78rem", color: "#666", margin: "4px 0 8px" }}>
@@ -708,7 +709,7 @@ export default function VetMap() {
                         </p>
                         <button
                           onClick={() => openBooking(v)}
-                          style={{ background: "#2e7d32", color: "white", border: "none", padding: "7px 14px", borderRadius: "8px", cursor: "pointer", fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: "0.78rem" }}
+                          style={{ background: "#0d6b6e", color: "white", border: "none", padding: "7px 14px", borderRadius: "8px", cursor: "pointer", fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: "0.78rem" }}
                         >
                           Book Now
                         </button>
@@ -761,7 +762,7 @@ export default function VetMap() {
                 {hasUserLoc && <CircleMarker center={userLoc} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} />}
                 {route?.coords && (
                   <>
-                    <Polyline positions={route.coords} pathOptions={{ color: "#2e7d32", weight: 5, opacity: 0.85 }} />
+                    <Polyline positions={route.coords} pathOptions={{ color: "#0d6b6e", weight: 5, opacity: 0.85 }} />
                     <FitRoute coords={route.coords} />
                   </>
                 )}

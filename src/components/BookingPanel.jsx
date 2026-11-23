@@ -1,9 +1,10 @@
+// FILE: src/components/BookingPanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { createBooking, dateKey, fmtTime, generateSlots, parseDateKey, prettyDate, useAvailability, useTakenSlots } from "../utils/Booking";
+import { createBooking, dateKey, fmtTime, generateSlots, parseDateKey, prettyDate, useAvailability, useTakenSlots } from "../utils/booking";
 
 const DAYS_AHEAD = 14;
 
@@ -235,7 +236,7 @@ export function BookingButton({ providerId, pet, me, onRequireAuth, children = "
           if (!me) return onRequireAuth?.();
           setOpen(true);
         }}
-        style={{ padding: "6px 14px", border: "2px solid #16a34a", borderRadius: 999, background: "#16a34a", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+        style={{ padding: "6px 14px", border: "2px solid #0d6b6e", borderRadius: 999, background: "#0d6b6e", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
       >
         {children}
       </button>
@@ -248,22 +249,22 @@ const s = {
   wrap: { color: "#0f172a" },
   h3: { margin: "0 0 6px", fontSize: "1.15rem" },
   muted: { color: "#64748b", fontSize: 14, margin: "4px 0" },
-  check: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, marginLeft: 8, borderRadius: "50%", background: "#16a34a", color: "#fff", fontSize: 11 },
-  back: { background: "none", border: "none", color: "#15803d", cursor: "pointer", padding: 0, marginBottom: 8, fontWeight: 600 },
+  check: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, marginLeft: 8, borderRadius: "50%", background: "#0d6b6e", color: "#fff", fontSize: 11 },
+  back: { background: "none", border: "none", color: "#0d6b6e", cursor: "pointer", padding: 0, marginBottom: 8, fontWeight: 600 },
   strip: { display: "flex", gap: 8, overflowX: "auto", padding: "10px 0 4px" },
   day: { display: "flex", flexDirection: "column", alignItems: "center", minWidth: 58, padding: "8px 6px", border: "1px solid #cbd5e1", borderRadius: 12, background: "#fff", cursor: "pointer", color: "#0f172a" },
-  dayOn: { background: "#15803d", borderColor: "#15803d", color: "#fff" },
+  dayOn: { background: "#0d6b6e", borderColor: "#0d6b6e", color: "#fff" },
   dayOff: { opacity: 0.4, cursor: "not-allowed" },
   slots: { display: "flex", flexWrap: "wrap", gap: 8 },
   slot: { padding: "8px 14px", border: "1px solid #cbd5e1", borderRadius: 999, background: "#fff", cursor: "pointer", fontWeight: 600, color: "#0f172a" },
-  slotOn: { background: "#15803d", borderColor: "#15803d", color: "#fff" },
+  slotOn: { background: "#0d6b6e", borderColor: "#0d6b6e", color: "#fff" },
   label: { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 },
   input: { width: "100%", padding: "10px 12px", fontSize: 14, border: "1px solid #cbd5e1", borderRadius: 8, boxSizing: "border-box", fontFamily: "inherit" },
   error: { margin: "10px 0 0", padding: "8px 12px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", fontSize: 13 },
-  primary: { marginTop: 14, padding: "12px 22px", background: "#15803d", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer" },
-  secondary: { padding: "10px 20px", background: "#fff", color: "#15803d", border: "2px solid #15803d", borderRadius: 10, fontWeight: 700, cursor: "pointer" },
-  tips: { padding: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, fontSize: 14 },
-  link: { color: "#15803d", fontWeight: 600 },
+  primary: { marginTop: 14, padding: "12px 22px", background: "#0d6b6e", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer" },
+  secondary: { padding: "10px 20px", background: "#fff", color: "#0d6b6e", border: "2px solid #0d6b6e", borderRadius: 10, fontWeight: 700, cursor: "pointer" },
+  tips: { padding: 14, background: "#ecf9f8", border: "1px solid #b8e6e3", borderRadius: 12, fontSize: 14 },
+  link: { color: "#0d6b6e", fontWeight: 600 },
   overlay: { position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(15,23,42,.6)" },
   modal: { position: "relative", width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: 24, background: "#fff", borderRadius: 18 },
   x: { position: "absolute", top: 10, right: 12, border: "none", background: "none", fontSize: 18, cursor: "pointer", color: "#64748b" },

@@ -1,0 +1,87 @@
+/* FILE: src/styles/theme.css */
+/*
+ * VetAdopt theme: one source for colors, type, shape and the shared look
+ * (deep teal, soft mint-and-sky backgrounds, frosted-glass cards).
+ * Import once, e.g. in main.jsx:   import "./styles/theme.css";
+ */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+:root {
+  /* brand */
+  --vp-teal-900: #0a3d40;
+  --vp-teal-800: #0b5457;
+  --vp-teal-700: #0d6b6e; /* primary: white text on it passes contrast */
+  --vp-teal-600: #11888a;
+  --vp-teal-500: #19a3a1;
+  --vp-teal-200: #b8e6e3;
+  --vp-teal-100: #d6f2f0;
+  --vp-teal-50: #ecf9f8;
+  --vp-sky-50: #eef5fb;
+  /* neutrals */
+  --vp-ink: #0e2a2f;
+  --vp-muted: #4b6469;
+  --vp-border: #d3e3e5;
+  /* meaning (keep these recognisable) */
+  --vp-success: #15803d;
+  --vp-warning: #b45309;
+  --vp-danger: #b91c1c;
+  /* shape and depth */
+  --vp-radius-sm: 10px;
+  --vp-radius: 16px;
+  --vp-radius-lg: 24px;
+  --vp-shadow: 0 1px 2px rgba(11, 84, 87, 0.06), 0 12px 32px rgba(11, 84, 87, 0.09);
+  --vp-glass: rgba(255, 255, 255, 0.74);
+  --vp-font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body { font-family: var(--vp-font); color: var(--vp-ink); }
+
+/* backgrounds */
+.vp-bg { background: linear-gradient(135deg, #e8f1fb 0%, #e2f5f1 100%); }
+
+/* frosted glass: keep text on it dark and the glass at least ~70% opaque so it stays readable */
+.vp-glass {
+  background: var(--vp-glass);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--vp-radius);
+  box-shadow: var(--vp-shadow);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vp-glass { background: rgba(255, 255, 255, 0.95); }
+}
+
+/* type */
+.vp-display { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; color: var(--vp-teal-900); }
+.vp-display b { color: var(--vp-teal-600); }
+.vp-lead { font-size: 1.1rem; line-height: 1.55; color: var(--vp-muted); max-width: 520px; }
+
+/* buttons */
+.vp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 22px; border: 2px solid var(--vp-teal-700); border-radius: 999px; background: var(--vp-teal-700); color: #fff; font: inherit; font-weight: 700; font-size: 0.92rem; text-decoration: none; cursor: pointer; transition: transform 0.12s, filter 0.12s; }
+.vp-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.vp-btn-ghost { background: transparent; color: var(--vp-teal-700); }
+.vp-btn-ghost:hover { background: var(--vp-teal-50); filter: none; }
+.vp-btn-block { display: flex; width: 100%; }
+.vp-btn:focus-visible, .vp-chip:focus-visible, .vp-input:focus-visible { outline: 3px solid var(--vp-teal-500); outline-offset: 2px; }
+
+/* form fields (see the login mockup: icon on the left, rounded, soft border) */
+.vp-input { width: 100%; padding: 13px 16px; border: 1.5px solid var(--vp-border); border-radius: 14px; background: #fff; color: var(--vp-ink); font: inherit; font-size: 0.95rem; }
+.vp-input::placeholder { color: #7f9296; }
+.vp-label { display: block; margin-bottom: 6px; font-size: 0.82rem; font-weight: 700; color: var(--vp-ink); }
+
+/* filter chips (Dogs / Cats / Rabbits / Parrots, age and gender) */
+.vp-chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border: 1.5px solid var(--vp-border); border-radius: 999px; background: rgba(255, 255, 255, 0.85); color: var(--vp-ink); font: inherit; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+.vp-chip.on, .vp-chip[aria-pressed="true"] { background: var(--vp-teal-700); border-color: var(--vp-teal-700); color: #fff; }
+
+/* pet card (photo on top, heart, name, short facts, one clear action) */
+.vp-pet-card { display: flex; flex-direction: column; overflow: hidden; border-radius: 20px; }
+.vp-pet-photo { position: relative; aspect-ratio: 1 / 0.9; background: var(--vp-teal-100); }
+.vp-pet-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vp-heart { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; display: grid; place-items: center; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: var(--vp-teal-700); cursor: pointer; }
+.vp-pet-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; }
+.vp-pet-name { margin: 0; font-size: 1.05rem; font-weight: 800; }
+.vp-pet-meta { margin: 0; font-size: 0.82rem; color: var(--vp-muted); }
+.vp-pet-desc { margin: 4px 0 10px; font-size: 0.88rem; color: var(--vp-ink); }
+
+@media (prefers-reduced-motion: reduce) { .vp-btn { transition: none; } .vp-btn:hover { transform: none; } }

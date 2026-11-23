@@ -1,3 +1,4 @@
+// FILE: src/pages/Donate.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
@@ -183,16 +184,16 @@ export default function DonateEWallet() {
         .dn-amounts { display:flex; flex-wrap:wrap; gap:8px; margin: 8px 0 12px; }
         .dn-amt-chip {
           padding: 10px 18px; border-radius: 99px; border: 2px solid #e0ece0;
-          background: white; color: #2e7d32; font-weight: 800; font-size: 0.88rem;
+          background: white; color: #0d6b6e; font-weight: 800; font-size: 0.88rem;
           cursor: pointer; transition: all 0.18s;
         }
-        .dn-amt-chip:hover { border-color: #81c784; background: #f1f8f1; }
-        .dn-amt-chip.active { background: #2e7d32; color: white; border-color: #2e7d32; box-shadow: 0 4px 12px rgba(46,125,50,0.3); }
+        .dn-amt-chip:hover { border-color: #81c784; background: #ecf9f8; }
+        .dn-amt-chip.active { background: #0d6b6e; color: white; border-color: #0d6b6e; box-shadow: 0 4px 12px rgba(46,125,50,0.3); }
 
         /* Impact preview */
         .dn-impact-preview {
           display: flex; align-items: center; gap: 10px;
-          background: #f1f8f1; border-radius: 12px; padding: 12px 16px;
+          background: #ecf9f8; border-radius: 12px; padding: 12px 16px;
           margin-bottom: 16px; font-size: 0.85rem; color: #2e5c2e; animation: impactIn 0.3s ease;
         }
         .dn-impact-icon { font-size: 1.4rem; flex-shrink: 0; }
@@ -205,37 +206,37 @@ export default function DonateEWallet() {
           cursor: pointer; transition: all 0.2s; background: white;
         }
         .dn-wallet-card:hover { border-color: #81c784; background: #fcfdfc; }
-        .dn-wallet-card.active { border-color: #2e7d32; background: #f1f8f1; box-shadow: 0 4px 12px rgba(46,125,50,0.15); }
+        .dn-wallet-card.active { border-color: #0d6b6e; background: #ecf9f8; box-shadow: 0 4px 12px rgba(46,125,50,0.15); }
         .dn-wallet-info { display: flex; align-items: center; gap: 10px; }
         .dn-wallet-icon { font-size: 1.3rem; }
         .dn-wallet-name { font-weight: 800; font-size: 0.9rem; color: #1a2e1a; }
-        .dn-wallet-badge { font-size: 0.65rem; font-weight: 700; color: #2e7d32; background: #e8f5e9; padding: 3px 7px; border-radius: 6px; }
+        .dn-wallet-badge { font-size: 0.65rem; font-weight: 700; color: #0d6b6e; background: #d6f2f0; padding: 3px 7px; border-radius: 6px; }
 
         /* Fields */
         .dn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .dn-field { margin-bottom: 16px; }
-        .dn-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #2e7d32; margin-bottom: 6px; }
+        .dn-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #0d6b6e; margin-bottom: 6px; }
         .dn-input {
           width: 100%; padding: 13px 16px; border: 2px solid #e0ece0; border-radius: 12px;
           font-size: 0.92rem; font-family: 'Cabinet Grotesk', sans-serif; color: #1a2e1a;
           outline: none; transition: border-color 0.2s; background: white;
         }
-        .dn-input:focus { border-color: #2e7d32; }
+        .dn-input:focus { border-color: #0d6b6e; }
         .dn-input.err { border-color: #e53935; }
         .dn-input-wrap { position: relative; }
-        .dn-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #2e7d32; font-weight: 800; font-size: 1rem; pointer-events: none; }
+        .dn-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #0d6b6e; font-weight: 800; font-size: 1rem; pointer-events: none; }
         .dn-input-pfx { padding-left: 30px; }
         .dn-textarea { resize: vertical; min-height: 80px; }
         .dn-err { font-size: 0.75rem; color: #c62828; margin-top: 5px; font-weight: 600; }
         .dn-divider { border: none; border-top: 1px solid #eef4ee; margin: 20px 0; }
         .dn-error-box { background:#fdecea; color:#b3261e; border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:0.88rem; font-weight:600; }
-        .dn-history-link { color:#2e7d32; font-weight:800; }
+        .dn-history-link { color:#0d6b6e; font-weight:800; }
         .dn-secure { font-size: 0.72rem; color: #9aaa9a; margin-top: 8px; font-weight: 600; text-align: center; }
 
         /* Button */
         .dn-btn {
           width: 100%; padding: 17px; border-radius: 14px; border: none;
-          background: linear-gradient(135deg,#2e7d32,#1b5e20); color: white;
+          background: linear-gradient(135deg,#0d6b6e,#0a3d40); color: white;
           font-size: 1rem; font-weight: 900; cursor: pointer; letter-spacing: 0.3px;
           transition: all 0.25s; box-shadow: 0 6px 20px rgba(46,125,50,0.35);
         }

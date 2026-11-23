@@ -1,12 +1,9 @@
+// FILE: src/pages/Veterinarian/VetDashboard.jsx
 import { useMemo } from "react";
-import {
-  useVetAppointments,
-  buildPatients,
-  todayString,
-  timeToMinutes,
-  formatDate,
-  STATUS_COLORS,
-} from "./vetHelpers";
+import { Link } from "react-router-dom";
+import { Bell, CalendarDays, CheckCircle2, FileText, MessageSquare, PawPrint, User } from "lucide-react";
+import { useVetAppointments, buildPatients, todayString, timeToMinutes, formatDate } from "./vetHelpers";
+import { PageHeader, StatCard, Card, StatusBadge, Empty, ErrorNote } from "../../layouts/dashboard/ui";
 
 function Dashboard() {
   const { appointments, loading, error, user } = useVetAppointments();
@@ -25,146 +22,69 @@ function Dashboard() {
 
     // Next 5 pending / confirmed visits from today onward
     const upcoming = appointments
-      .filter(
-        (a) =>
-          (a.status === "pending" || a.status === "confirmed") &&
-          (a.date || "") >= today
-      )
-      .sort(
-        (a, b) =>
-          (a.date || "").localeCompare(b.date || "") ||
-          timeToMinutes(a.time) - timeToMinutes(b.time)
-      )
+      .filter((a) => (a.status === "pending" || a.status === "confirmed") && (a.date || "") >= today)
+      .sort((a, b) => (a.date || "").localeCompare(b.date || "") || timeToMinutes(a.time) - timeToMinutes(b.time))
       .slice(0, 5);
 
     return { stats, upcoming };
   }, [appointments]);
 
-  if (loading) {
-    return <h2 style={{ textAlign: "center", margin: "40px 0" }}>Loading Dashboard...</h2>;
-  }
-
-  if (!user) {
-    return <h2 style={{ textAlign: "center", margin: "40px 0" }}>Please log in to view your dashboard.</h2>;
+  if (!loading && !user) {
+    return <div className="d-page"><Empty icon={User} title="Please log in" text="Log in to see your dashboard." /></div>;
   }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>📌 Vet Overview Dashboard</h2>
+    <div className="d-page">
+      <PageHeader
+        title="Overview"
+        subtitle="Your appointments and patients at a glance."
+        actions={<Link to="/vet/medical-records" className="d-btn"><FileText size={16} aria-hidden="true" /> Add a medical record</Link>}
+      />
 
-      {error && <div style={styles.error}>Couldn't load appointments: {error}</div>}
+      {error && <ErrorNote>Couldn't load appointments: {error}</ErrorNote>}
 
-      <div style={styles.cardGrid}>
-        <div style={styles.statCard}>
-          <h3>🐾 Registered Patients</h3>
-          <p style={styles.statNumber}>{stats.registeredPatients}</p>
-          <p style={styles.statHint}>Pets booked with you</p>
-        </div>
-
-        <div style={{ ...styles.statCard, borderLeftColor: "#1565c0" }}>
-          <h3>✅ Confirmed Appointments</h3>
-          <p style={styles.statNumber}>{stats.confirmed}</p>
-          <p style={styles.statHint}>Accepted by you</p>
-        </div>
-
-        <div style={{ ...styles.statCard, borderLeftColor: "#e65100" }}>
-          <h3>🔔 Pending Requests</h3>
-          <p style={styles.statNumber}>{stats.pending}</p>
-          <p style={styles.statHint}>Waiting for your reply</p>
-        </div>
-
-        <div style={{ ...styles.statCard, borderLeftColor: "#7b1fa2" }}>
-          <h3>⏰ Today's Schedule</h3>
-          <p style={styles.statNumber}>{stats.today}</p>
-          <p style={styles.statHint}>{stats.total} appointments in total</p>
-        </div>
+      <div className="d-grid">
+        <StatCard loading={loading} icon={PawPrint} tone="purple" label="Registered patients" value={stats.registeredPatients} hint="Pets booked with you" to="/vet/patients" />
+        <StatCard loading={loading} icon={CheckCircle2} tone="green" label="Confirmed" value={stats.confirmed} hint="Accepted by you" to="/vet/appointments" />
+        <StatCard loading={loading} icon={Bell} tone="amber" label="Pending requests" value={stats.pending} hint="Waiting for your reply" to="/vet/appointments" />
+        <StatCard loading={loading} icon={CalendarDays} tone="blue" label="Today" value={stats.today} hint={`${stats.total} appointments in total`} to="/vet/appointments" />
       </div>
 
-      <div style={styles.section}>
-        <h3>📋 Upcoming Appointments</h3>
-        {upcoming.length === 0 ? (
-          <p style={styles.mutedText}>No upcoming appointments scheduled.</p>
-        ) : (
-          <div style={styles.list}>
-            {upcoming.map((appt) => {
-              const c = STATUS_COLORS[appt.status] || STATUS_COLORS.pending;
-              return (
-                <div key={appt.id} style={styles.recentItem}>
-                  <div>
-                    <strong>{appt.petName || "Pet"}</strong> ({appt.ownerName || "Owner"})
-                    <div style={styles.subText}>
-                      📅 {formatDate(appt.date)} at ⏰ {appt.time || "N/A"}
-                      {appt.service && ` · ${appt.service}`}
-                    </div>
-                  </div>
-                  <span style={{ ...styles.badge, background: c.bg, color: c.color }}>
-                    {appt.status || "pending"}
+      <div className="d-two">
+        <Card title="Upcoming appointments" action={<Link to="/vet/appointments" className="d-link">View all</Link>}>
+          {upcoming.length === 0 ? (
+            <Empty
+              icon={CalendarDays}
+              title="No upcoming appointments"
+              text="New requests from adopters will show up here."
+              action={<Link to="/vet/profile" className="d-btn ghost">Set your availability</Link>}
+            />
+          ) : (
+            upcoming.map((appt) => (
+              <div key={appt.id} className="d-row">
+                <div className="d-initial" aria-hidden="true">{(appt.petName || "P").charAt(0).toUpperCase()}</div>
+                <div className="d-row-main">
+                  <strong>{appt.petName || "Pet"} <span style={{ display: "inline", fontWeight: 400 }}>({appt.ownerName || "Owner"})</span></strong>
+                  <span>
+                    {formatDate(appt.date)} at {appt.time || "N/A"}
+                    {appt.service && ` · ${appt.service}`}
                   </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <StatusBadge status={appt.status || "pending"} />
+              </div>
+            ))
+          )}
+        </Card>
+
+        <Card title="Quick actions">
+          <div className="d-row"><Link to="/vet/patients" className="d-link"><PawPrint size={16} style={{ verticalAlign: "-3px" }} /> See your patients</Link></div>
+          <div className="d-row"><Link to="/vet/medical-records" className="d-link"><FileText size={16} style={{ verticalAlign: "-3px" }} /> Write a medical record</Link></div>
+          <div className="d-row"><Link to="/vet/messages" className="d-link"><MessageSquare size={16} style={{ verticalAlign: "-3px" }} /> Reply to messages</Link></div>
+          <div className="d-row"><Link to="/vet/profile" className="d-link"><User size={16} style={{ verticalAlign: "-3px" }} /> Update your profile and hours</Link></div>
+        </Card>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: { padding: "30px" },
-  heading: { marginBottom: "20px", color: "#263238" },
-  error: {
-    background: "#fdecea",
-    color: "#b3261e",
-    padding: "12px 16px",
-    borderRadius: "10px",
-    marginBottom: "20px",
-    fontSize: "14px",
-  },
-  cardGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: "20px",
-    marginBottom: "30px",
-  },
-  statCard: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "14px",
-    boxShadow: "0 4px 14px rgba(0,0,0,.06)",
-    borderLeft: "5px solid #2e7d32",
-  },
-  statNumber: {
-    fontSize: "28px",
-    fontWeight: "bold",
-    margin: "10px 0 0",
-    color: "#263238",
-  },
-  statHint: { fontSize: "12px", color: "#90a4ae", margin: "4px 0 0" },
-  section: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "14px",
-    boxShadow: "0 4px 14px rgba(0,0,0,.06)",
-  },
-  mutedText: { color: "#90a4ae", marginTop: "10px" },
-  list: { display: "flex", flexDirection: "column", gap: "12px", marginTop: "15px" },
-  recentItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 16px",
-    background: "#f8f9fa",
-    borderRadius: "10px",
-  },
-  subText: { fontSize: "13px", color: "#607d8b", marginTop: "4px" },
-  badge: {
-    padding: "4px 10px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 600,
-    textTransform: "capitalize",
-  },
-};
 
 export default Dashboard;

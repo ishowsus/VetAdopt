@@ -1,131 +1,79 @@
+// FILE: src/pages/admin/Dashboard.jsx  (rename the file to Dashboard.jsx)
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { collection, getCountFromServer } from "firebase/firestore";
+import { Link } from "react-router-dom";
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import { CalendarDays, ClipboardList, Flag, ListChecks, ShieldCheck, Users } from "lucide-react";
 import { db } from "../../firebase";
+import { PageHeader, StatCard, Card, ErrorNote } from "../../layouts/dashboard/ui";
 
-const CARDS = [
-  { key: "users", label: "Registered Users", icon: "", color: "#2e7d32", light: "#e8f5e9", path: "/admin/users" },
-  { key: "applications", label: "Adoption Requests", icon: "", color: "#f57f17", light: "#fff8e1", path: "/admin/applications" },
-  { key: "appointments", label: "Vet Appointments", icon: "", color: "#0288d1", light: "#e1f5fe", path: "/admin/appointments" },
-  { key: "reports", label: "Pending Reports", icon: "", color: "#d32f2f", light: "#ffebee", path: "/admin/reports" },
-];
-
-const QUICK_LINKS = [
-  { label: "Manage Users", path: "/admin/users", color: "#2e7d32" },
-  { label: "View Reports", path: "/admin/reports", color: "#d32f2f" },
-  { label: "Settings", path: "/admin/settings", color: "#0288d1" },
-];
+const count = (q) => getCountFromServer(q).then((s) => s.data().count);
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({ users: 0, applications: 0, appointments: 0, reports: 0 });
+  const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchStats = async () => {
-      try {
-        // Fast & low-cost document counts
-        const [usersSnap, appsSnap, apptSnap, reportsSnap] = await Promise.all([
-          getCountFromServer(collection(db, "users")),
-          getCountFromServer(collection(db, "applications")),
-          getCountFromServer(collection(db, "appointments")),
-          getCountFromServer(collection(db, "reports")),
-        ]);
-
-        if (isMounted) {
-          setStats({
-            users: usersSnap.data().count,
-            applications: appsSnap.data().count,
-            appointments: apptSnap.data().count,
-            reports: reportsSnap.data().count,
-          });
-        }
-      } catch (err) {
-        console.error("Error fetching stats:", err);
-        if (isMounted) setError("Failed to load dashboard metrics.");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+    let alive = true;
+    const jobs = {
+      users: count(collection(db, "users")),
+      applications: count(collection(db, "applications")),
+      appointments: count(collection(db, "appointments")),
+      reports: count(collection(db, "reports")),
+      verifications: count(query(collection(db, "verifications"), where("status", "==", "pending"))),
+      listings: count(query(collection(db, "pets"), where("status", "==", "Pending Review"))),
     };
-
-    fetchStats();
-    return () => { isMounted = false; };
+    // allSettled: one failing count shouldn't blank the whole dashboard
+    Promise.allSettled(Object.values(jobs)).then((results) => {
+      if (!alive) return;
+      const next = {};
+      let failed = false;
+      Object.keys(jobs).forEach((k, i) => {
+        if (results[i].status === "fulfilled") next[k] = results[i].value;
+        else {
+          failed = true;
+          console.error(`Count failed for ${k}:`, results[i].reason);
+        }
+      });
+      setStats(next);
+      if (failed) setError("Some numbers couldn't load. Check that the latest Firestore rules are published.");
+      setLoading(false);
+    });
+    return () => { alive = false; };
   }, []);
 
+  const n = (k) => (stats[k] ?? "–").toLocaleString?.() ?? "–";
+  const waiting = (stats.verifications || 0) + (stats.listings || 0);
+
   return (
-    <div className="ad-root">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        .ad-root { padding:32px; font-family:'DM Sans',sans-serif; color:#1a1a1a; max-width:1100px; margin:0 auto; }
-        .ad-title { font-size:1.6rem; font-weight:800; color:#1a2e1a; margin-bottom:4px; }
-        .ad-sub { font-size:0.88rem; color:#9aaa9a; margin-bottom:32px; }
-        .ad-stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin-bottom:36px; }
-        .ad-stat-card {
-          padding:24px; border-radius:18px; border:1px solid #eee;
-          display:flex; align-items:center; gap:16px; background:white;
-          box-shadow:0 2px 10px rgba(0,0,0,0.04); transition:transform 0.2s,box-shadow 0.2s;
-          cursor:pointer;
-        }
-        .ad-stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.08); }
-        .ad-stat-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
-        .ad-stat-num { font-size:1.8rem; font-weight:800; line-height:1; }
-        .ad-stat-label { font-size:0.75rem; font-weight:600; color:#9aaa9a; margin-top:4px; text-transform:uppercase; letter-spacing:0.05em; }
-        .ad-section-title { font-size:1rem; font-weight:800; color:#1a2e1a; margin-bottom:14px; }
-        .ad-links { display:flex; gap:12px; flex-wrap:wrap; }
-        .ad-link-btn {
-          padding:12px 22px; border-radius:12px; border:none; color:white;
-          font-size:0.88rem; font-weight:700; cursor:pointer;
-          font-family:'DM Sans',sans-serif; transition:all 0.2s;
-          box-shadow:0 4px 12px rgba(0,0,0,0.08);
-        }
-        .ad-link-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,0.14); }
-        .ad-skeleton { background:#e8ece8; border-radius:6px; animation:shimmer 1.2s infinite ease-in-out; }
-        @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .ad-error { background:#ffebee; color:#c62828; padding:14px 18px; border-radius:12px; font-size:0.88rem; font-weight:600; margin-bottom:24px; }
-        @media(max-width:600px) { .ad-root { padding:20px; } }
-      `}</style>
+    <div className="d-page">
+      <PageHeader title="Overview" subtitle="System metrics and the things waiting for you." />
 
-      <div className="ad-title">Admin Dashboard</div>
-      <div className="ad-sub">Overview of system metrics and quick management options.</div>
+      {error && <ErrorNote>{error}</ErrorNote>}
 
-      {error && <div className="ad-error">⚠️ {error}</div>}
+      <Card title={waiting > 0 ? `Needs your attention (${waiting})` : "Needs your attention"}>
+        <div className="d-grid" style={{ margin: "12px 0 0" }}>
+          <StatCard loading={loading} icon={ShieldCheck} tone={stats.verifications ? "amber" : "green"} label="Verification requests" value={n("verifications")} hint="Licenses, permits and IDs" to="/admin/verifications" />
+          <StatCard loading={loading} icon={ListChecks} tone={stats.listings ? "amber" : "green"} label="Pet listings to approve" value={n("listings")} hint="Adopters rehoming pets" to="/admin/listings" />
+        </div>
+      </Card>
 
-      <div className="ad-stat-grid">
-        {CARDS.map((c) => (
-          <div key={c.key} className="ad-stat-card" onClick={() => navigate(c.path)}>
-            <div className="ad-stat-icon" style={{ background: c.light }}>
-              {c.icon}
-            </div>
-            <div>
-              {loading ? (
-                <div className="ad-skeleton" style={{ width: 48, height: 28, marginBottom: 6 }} />
-              ) : (
-                <div className="ad-stat-num" style={{ color: c.color }}>
-                  {stats[c.key]?.toLocaleString()}
-                </div>
-              )}
-              <div className="ad-stat-label">{c.label}</div>
-            </div>
-          </div>
-        ))}
+      <div className="d-grid">
+        <StatCard loading={loading} icon={Users} tone="green" label="Registered users" value={n("users")} to="/admin/users" />
+        <StatCard loading={loading} icon={ClipboardList} tone="amber" label="Adoption requests" value={n("applications")} />
+        <StatCard loading={loading} icon={CalendarDays} tone="blue" label="Vet appointments" value={n("appointments")} />
+        <StatCard loading={loading} icon={Flag} tone="red" label="Reports" value={n("reports")} to="/admin/reports" />
       </div>
 
-      <div className="ad-section-title">Quick Links</div>
-      <div className="ad-links">
-        {QUICK_LINKS.map((l) => (
-          <button
-            key={l.label}
-            className="ad-link-btn"
-            style={{ background: l.color }}
-            onClick={() => navigate(l.path)}
-          >
-            {l.label}
-          </button>
-        ))}
-      </div>
+      <Card title="Quick links">
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", padding: "12px 0 4px" }}>
+          <Link to="/admin/verifications" className="d-btn">Verification requests</Link>
+          <Link to="/admin/listings" className="d-btn ghost">Pet listings</Link>
+          <Link to="/admin/users" className="d-btn ghost">Manage users</Link>
+          <Link to="/admin/reports" className="d-btn ghost">View reports</Link>
+          <Link to="/admin/settings" className="d-btn ghost">Settings</Link>
+        </div>
+      </Card>
     </div>
   );
 }

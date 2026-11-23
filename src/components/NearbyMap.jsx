@@ -1,3 +1,4 @@
+// FILE: src/components/NearbyMap.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -17,7 +18,7 @@ const pin = (emoji, bg) =>
     iconAnchor: [19, 19],
     popupAnchor: [0, -20],
   });
-const ICONS = { vet: pin("🩺", "#15803d"), shelter: pin("🏠", "#1d4ed8") };
+const ICONS = { vet: pin("🩺", "#0d6b6e"), shelter: pin("🏠", "#1d4ed8") };
 
 const km = (a, b, c, d) => {
   const R = 6371, r = Math.PI / 180;
@@ -190,11 +191,11 @@ const CSS = `
 .nm-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .nm-filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .nm-chip { padding: 8px 16px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 700; cursor: pointer; font: inherit; }
-.nm-chip.on { background: #15803d; border-color: #15803d; color: #fff; }
-.nm-btn { padding: 9px 18px; border-radius: 999px; border: 2px solid #15803d; background: #15803d; color: #fff; font-weight: 700; cursor: pointer; font: inherit; }
-.nm-btn.nm-ghost { background: #fff; color: #15803d; }
+.nm-chip.on { background: #0d6b6e; border-color: #0d6b6e; color: #fff; }
+.nm-btn { padding: 9px 18px; border-radius: 999px; border: 2px solid #0d6b6e; background: #0d6b6e; color: #fff; font-weight: 700; cursor: pointer; font: inherit; }
+.nm-btn.nm-ghost { background: #fff; color: #0d6b6e; }
 .nm-btn:disabled { opacity: .6; cursor: wait; }
-.nm-chip:focus-visible, .nm-btn:focus-visible, .nm-link:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
+.nm-chip:focus-visible, .nm-btn:focus-visible, .nm-link:focus-visible { outline: 3px solid #19a3a1; outline-offset: 2px; }
 .nm-map { position: relative; height: 420px; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.08); }
 .nm-loading { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 500; padding: 6px 14px; border-radius: 999px; background: #0f172a; color: #fff; font-size: .8rem; }
 .nm-pin-wrap { background: none; border: none; }
@@ -204,11 +205,11 @@ const CSS = `
 .nm-kind { font-size: 1.4rem; }
 .nm-info { flex: 1; min-width: 180px; display: flex; flex-direction: column; font-size: .9rem; }
 .nm-info span { color: #64748b; font-size: .82rem; }
-.nm-check { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 6px; border-radius: 50%; background: #15803d; color: #fff; font-size: .6rem; }
-.nm-link { background: none; border: none; color: #15803d; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 4px; }
+.nm-check { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 6px; border-radius: 50%; background: #0d6b6e; color: #fff; font-size: .6rem; }
+.nm-link { background: none; border: none; color: #0d6b6e; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 4px; }
 .nm-error { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: #fee2e2; color: #b91c1c; font-size: .88rem; }
 .nm-empty { color: #64748b; margin: 14px 0 0; }
-.nm-teaser, .nm-box { text-align: center; padding: 48px 24px; border: 1px dashed #bbf7d0; border-radius: 20px; background: #f0fdf4; color: #0f172a; }
+.nm-teaser, .nm-box { text-align: center; padding: 48px 24px; border: 1px dashed #b8e6e3; border-radius: 20px; background: #ecf9f8; color: #0f172a; }
 .nm-teaser h3 { margin: 8px 0 6px; font-size: 1.3rem; }
 .nm-teaser p { margin: 0 0 16px; color: #475569; }
 @media (max-width: 640px) { .nm-map { height: 340px; } }

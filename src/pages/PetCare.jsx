@@ -1,3 +1,4 @@
+// FILE: src/pages/PetCare.jsx
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -302,26 +303,26 @@ export default function PetCare() {
 const CSS = `
 .pc-root { color: #0f172a; background: #f8fafc; min-height: 100vh; }
 .pc-root *, .pc-root *::before, .pc-root *::after { box-sizing: border-box; }
-.pc-hero { text-align: center; padding: 56px 20px 48px; color: #fff; background: linear-gradient(135deg, #14532d, #15803d); }
+.pc-hero { text-align: center; padding: 56px 20px 48px; color: #fff; background: linear-gradient(135deg, #0a3d40, #0d6b6e); }
 .pc-eyebrow { display: inline-block; padding: 4px 14px; border-radius: 999px; background: rgba(255,255,255,.16); font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .pc-hero h1 { margin: 14px 0 10px; font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.15; }
 .pc-hero p { max-width: 560px; margin: 0 auto 22px; color: rgba(255,255,255,.88); font-size: 1.02rem; line-height: 1.55; }
 .pc-hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.pc-btn { padding: 12px 24px; border: 2px solid #fff; border-radius: 999px; background: #fff; color: #14532d; font: inherit; font-weight: 700; cursor: pointer; }
+.pc-btn { padding: 12px 24px; border: 2px solid #fff; border-radius: 999px; background: #fff; color: #0a3d40; font: inherit; font-weight: 700; cursor: pointer; }
 .pc-btn.pc-ghost { background: transparent; color: #fff; }
 .pc-btn.pc-danger { margin-top: 12px; background: #b91c1c; border-color: #b91c1c; color: #fff; }
-.pc-btn:focus-visible, .pc-tab:focus-visible, .pc-step summary:focus-visible { outline: 3px solid #22c55e; outline-offset: 3px; }
+.pc-btn:focus-visible, .pc-tab:focus-visible, .pc-step summary:focus-visible { outline: 3px solid #19a3a1; outline-offset: 3px; }
 .pc-main { max-width: 900px; margin: 0 auto; padding: 28px 18px 80px; }
 .pc-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
-.pc-tab { flex: 1; min-width: 120px; padding: 12px 14px; border: 2px solid #bbf7d0; border-radius: 14px; background: #fff; color: #166534; font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; }
-.pc-tab.on { background: #15803d; border-color: #15803d; color: #fff; }
+.pc-tab { flex: 1; min-width: 120px; padding: 12px 14px; border: 2px solid #b8e6e3; border-radius: 14px; background: #fff; color: #0b5457; font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; }
+.pc-tab.on { background: #0d6b6e; border-color: #0d6b6e; color: #fff; }
 .pc-panel { padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 6px 24px rgba(15,23,42,.06); }
 .pc-panel h2, .pc-block h2 { margin: 26px 0 12px; font-size: 1.3rem; }
 .pc-panel h2:first-of-type { margin-top: 18px; }
 .pc-intro { margin: 0; color: #334155; font-size: 1.05rem; line-height: 1.6; }
 .pc-schedule { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.pc-schedule li { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 12px 14px; border-radius: 12px; background: #f0fdf4; }
-.pc-schedule strong { color: #166534; }
+.pc-schedule li { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 12px 14px; border-radius: 12px; background: #ecf9f8; }
+.pc-schedule strong { color: #0b5457; }
 .pc-schedule span { color: #334155; line-height: 1.45; }
 .pc-step { margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
 .pc-step summary { padding: 14px 16px; font-weight: 700; cursor: pointer; }
@@ -331,11 +332,11 @@ const CSS = `
 .pc-list { margin: 0; padding-left: 22px; color: #334155; line-height: 1.65; }
 .pc-list li { margin-bottom: 8px; }
 .pc-kit { display: flex; flex-wrap: wrap; gap: 8px; }
-.pc-chip { padding: 6px 14px; border-radius: 999px; background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; font-size: .9rem; }
+.pc-chip { padding: 6px 14px; border-radius: 999px; background: #ecfdf5; border: 1px solid #b8e6e3; color: #0b5457; font-size: .9rem; }
 .pc-block { margin-top: 30px; }
 .pc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
 .pc-card { padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; }
-.pc-card h3 { margin: 0 0 6px; font-size: 1rem; color: #166534; }
+.pc-card h3 { margin: 0 0 6px; font-size: 1rem; color: #0b5457; }
 .pc-card p { margin: 0; color: #334155; line-height: 1.55; font-size: .95rem; }
 .pc-toxic { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .pc-toxic li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 11px 14px; background: #fff; border: 1px solid #fecaca; border-radius: 12px; }

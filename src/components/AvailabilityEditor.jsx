@@ -1,7 +1,8 @@
+// FILE: src/components/AvailabilityEditor.jsx
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { DAYS, emptyWeek, fromInputTime, toInputTime, prettyDate, dateKey } from "../utils/Booking";
+import { DAYS, emptyWeek, fromInputTime, toInputTime, prettyDate, dateKey } from "../utils/booking";
 
 const defaultForm = () => ({
   accepting: true,
@@ -161,8 +162,8 @@ export default function AvailabilityEditor({ role = "vet" }) {
 
 const s = {
   muted: { color: "#64748b", fontSize: 13 },
-  switchRow: { display: "flex", gap: 12, alignItems: "flex-start", padding: 14, background: "#f0fdf4", borderRadius: 12, marginBottom: 16, cursor: "pointer" },
-  check: { width: 20, height: 20, marginTop: 2, accentColor: "#2e7d32" },
+  switchRow: { display: "flex", gap: 12, alignItems: "flex-start", padding: 14, background: "#ecf9f8", borderRadius: 12, marginBottom: 16, cursor: "pointer" },
+  check: { width: 20, height: 20, marginTop: 2, accentColor: "#0d6b6e" },
   field: { marginBottom: 14 },
   label: { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 },
   input: { width: "100%", padding: "10px 12px", fontSize: 15, border: "1px solid #cfd8dc", borderRadius: 8, boxSizing: "border-box" },
@@ -171,10 +172,10 @@ const s = {
   dayName: { width: 92, flexShrink: 0, fontSize: 14, paddingTop: 6 },
   window: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "0 0 6px" },
   time: { padding: "6px 8px", fontSize: 14, border: "1px solid #cfd8dc", borderRadius: 8 },
-  linkBtn: { background: "none", border: "none", color: "#2e7d32", cursor: "pointer", fontSize: 13, textDecoration: "underline", padding: 4 },
-  secondary: { padding: "6px 14px", border: "2px solid #2e7d32", borderRadius: 8, background: "#fff", color: "#2e7d32", fontWeight: 600, cursor: "pointer" },
+  linkBtn: { background: "none", border: "none", color: "#0d6b6e", cursor: "pointer", fontSize: 13, textDecoration: "underline", padding: 4 },
+  secondary: { padding: "6px 14px", border: "2px solid #0d6b6e", borderRadius: 8, background: "#fff", color: "#0d6b6e", fontWeight: 600, cursor: "pointer" },
   chip: { display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, background: "#fee2e2", color: "#991b1b", fontSize: 13 },
   chipX: { background: "none", border: "none", cursor: "pointer", color: "inherit" },
   msg: { padding: "10px 12px", borderRadius: 8, fontSize: 13, margin: "12px 0" },
-  primary: { padding: "12px 22px", background: "#2e7d32", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  primary: { padding: "12px 22px", background: "#0d6b6e", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer" },
 };

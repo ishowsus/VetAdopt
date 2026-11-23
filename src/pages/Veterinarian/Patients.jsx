@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 import { useVetAppointments, buildPatients, formatDate, STATUS_COLORS } from "./vetHelpers";
@@ -7,6 +8,7 @@ import { useVetAppointments, buildPatients, formatDate, STATUS_COLORS } from "./
 const OWNER_FIELDS = ["ownerId", "userId", "uid", "adopterId"];
 
 function Patients() {
+  const navigate = useNavigate();
   const { appointments, loading, error, user } = useVetAppointments();
   const [pets, setPets] = useState([]);
   const [search, setSearch] = useState("");
@@ -104,6 +106,13 @@ function Patients() {
                     </span>
                     {p.lastVisit && <span>✔️ Last visit: {formatDate(p.lastVisit.date)}</span>}
                   </div>
+                  <button
+                    type="button"
+                    style={styles.recordsBtn}
+                    onClick={() => navigate(`/vet/medical-records?patient=${encodeURIComponent(p.key)}`)}
+                  >
+                    📋 Medical records
+                  </button>
                 </div>
 
                 {next && (
@@ -202,6 +211,7 @@ const styles = {
     padding: "10px 14px",
     borderRadius: "10px",
   },
+  recordsBtn: { marginTop: "10px", padding: "6px 14px", border: "1px solid #7b1fa2", borderRadius: "8px", background: "#fff", color: "#7b1fa2", fontWeight: 600, fontSize: "13px", cursor: "pointer" },
   nextLabel: { fontSize: "12px", color: "#90a4ae" },
   badge: {
     padding: "3px 10px",

@@ -1,9 +1,10 @@
+// FILE: src/components/Bookings.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import {
   OUTCOMES, dateKey, fmtTime, prettyDate, recordVisitOutcome, setAdopterInterest, updateBookingStatus, useBookings,
-} from "../utils/Booking";
+} from "../utils/booking";
 
 const CHIP = {
   Pending: { bg: "#fef3c7", fg: "#92400e" },
@@ -75,7 +76,7 @@ function ManagerCard({ b, children }) {
       {b.adopterInterest && (
         <p style={s.sub}>{b.adopterInterest === "interested" ? "❤️ The adopter is interested in adopting" : "The adopter feels it isn't the right fit"}</p>
       )}
-      {mutual && <strong style={{ color: "#166534", fontSize: 14 }}>💚 You both feel it's a match. They can apply to adopt now.</strong>}
+      {mutual && <strong style={{ color: "#0b5457", fontSize: 14 }}>💚 You both feel it's a match. They can apply to adopt now.</strong>}
       {children}
     </div>
   );
@@ -261,16 +262,16 @@ export function MyBookings() {
 const s = {
   h4: { margin: "18px 0 8px", fontSize: 15 },
   card: { padding: 14, margin: "0 0 10px", border: "1px solid #e2e8f0", borderRadius: 12, background: "#fff" },
-  mutual: { borderColor: "#86efac", background: "#f0fdf4" },
+  mutual: { borderColor: "#8fdcd8", background: "#ecf9f8" },
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" },
   sub: { color: "#64748b", fontSize: 13, margin: "4px 0" },
   note: { margin: "8px 0", padding: "8px 10px", background: "#f8fafc", borderRadius: 8, fontSize: 14 },
-  outcome: { marginTop: 10, padding: 12, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10 },
-  matchBanner: { margin: "8px 0", padding: 12, background: "#dcfce7", border: "1px solid #86efac", borderRadius: 10, color: "#166534", fontSize: 14 },
+  outcome: { marginTop: 10, padding: 12, background: "#ecf9f8", border: "1px solid #b8e6e3", borderRadius: 10 },
+  matchBanner: { margin: "8px 0", padding: 12, background: "#d6f2f0", border: "1px solid #8fdcd8", borderRadius: 10, color: "#0b5457", fontSize: 14 },
   input: { width: "100%", padding: "8px 10px", fontSize: 14, border: "1px solid #cbd5e1", borderRadius: 8, boxSizing: "border-box", margin: "6px 0" },
   actions: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 },
-  primary: { padding: "8px 18px", border: "none", borderRadius: 8, background: "#15803d", color: "#fff", fontWeight: 700, cursor: "pointer" },
-  secondary: { padding: "8px 18px", border: "2px solid #15803d", borderRadius: 8, background: "#fff", color: "#15803d", fontWeight: 700, cursor: "pointer" },
+  primary: { padding: "8px 18px", border: "none", borderRadius: 8, background: "#0d6b6e", color: "#fff", fontWeight: 700, cursor: "pointer" },
+  secondary: { padding: "8px 18px", border: "2px solid #0d6b6e", borderRadius: 8, background: "#fff", color: "#0d6b6e", fontWeight: 700, cursor: "pointer" },
   danger: { padding: "8px 18px", border: "2px solid #b91c1c", borderRadius: 8, background: "#fff", color: "#b91c1c", fontWeight: 700, cursor: "pointer" },
   error: { padding: "8px 12px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", fontSize: 13 },
 };

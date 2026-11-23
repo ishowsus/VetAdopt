@@ -1,29 +1,34 @@
-import { useState, useEffect } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+// FILE: src/layouts/ShelterLayout.jsx
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
+import { ClipboardList, Heart, Home, LayoutDashboard, MessageSquare, PawPrint, User } from "lucide-react";
 import { auth } from "../firebase";
 import LogoutModal from "../components/LogoutModal";
+import { useUnreadCount } from "../utils/chat";
+import DashboardShell, { useUid } from "./dashboard/DashboardShell";
 
-const NAV_ITEMS = [
-  { to: "/shelter/dashboard", label: "Dashboard", icon: "" },
-  { to: "/shelter/pets", label: "My Pets", icon: "" },
-  { to: "/shelter/adoption-requests", label: "Adoption Requests", icon: "" },
-  { to: "/shelter/donations", label: "Donations", icon: "" },
-  { to: "/shelter/profile", label: "Profile", icon: "" },
-];
+const TITLES = {
+  "/shelter/dashboard": "Overview",
+  "/shelter/pets": "My pets",
+  "/shelter/adoption-requests": "Adoption requests",
+  "/shelter/donations": "Donations",
+  "/shelter/messages": "Messages",
+  "/shelter/profile": "Profile & settings",
+};
 
 function ShelterLayout() {
   const navigate = useNavigate();
+  const uid = useUid();
+  const unread = useUnreadCount(uid);
   const [signingOut, setSigningOut] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
   const handleLogout = async () => {
     setSigningOut(true);
     try {
       await signOut(auth);
-      // Keep App.jsx state in sync — Firebase signOut alone leaves
-      // localStorage.user set, so the session would survive a page refresh.
+      // Keep App.jsx state in sync: Firebase signOut alone leaves localStorage.user set.
       localStorage.removeItem("user");
       window.dispatchEvent(new Event("authChange"));
       navigate("/login");
@@ -33,276 +38,38 @@ function ShelterLayout() {
     }
   };
 
-  // Close the mobile dropdown on Escape
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+  const groups = [
+    {
+      label: "Shelter",
+      items: [
+        { to: "/shelter/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { to: "/shelter/pets", label: "My pets", icon: PawPrint },
+        { to: "/shelter/adoption-requests", label: "Adoption requests", icon: ClipboardList },
+        { to: "/shelter/donations", label: "Donations", icon: Heart },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { to: "/shelter/messages", label: "Messages", icon: MessageSquare, badge: unread },
+        { to: "/shelter/profile", label: "Profile", icon: User },
+      ],
+    },
+  ];
 
-  // Lock body scroll while the mobile dropdown is open (mobile only —
-  // on desktop the navbar is always visible so scrolling stays free)
-  useEffect(() => {
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-    if (!isMobile) return;
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
-
+  const me = auth.currentUser;
   return (
-    <div style={styles.shell}>
-      <style>{`
-        @media (max-width: 768px) {
-          .shelter-nav-links { display: none !important; }
-          .shelter-desktop-logout { display: none !important; }
-          .shelter-menu-toggle { display: inline-flex !important; }
-          .shelter-mobile-nav {
-            position: fixed;
-            top: 64px;
-            left: 0;
-            right: 0;
-            background: #1b5e20;
-            z-index: 40;
-            border-top: 1px solid rgba(255,255,255,0.15);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.25);
-          }
-          .shelter-nav-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 39;
-          }
-        }
-        @media (min-width: 769px) {
-          .shelter-menu-toggle { display: none !important; }
-        }
-      `}</style>
-
-      {/* ── Top Navbar (desktop: full bar / mobile: brand + ☰) ── */}
-      <header className="shelter-navbar" style={styles.navbar}>
-        <div style={styles.navbarInner}>
-          <span style={styles.navbarBrand}>Shelter Portal</span>
-
-          {/* Desktop links */}
-          <nav className="shelter-nav-links" style={styles.navLinks}>
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                style={({ isActive }) => ({
-                  ...styles.navLink,
-                  ...(isActive ? styles.navLinkActive : {}),
-                })}
-              >
-                <span style={styles.navIcon}>{item.icon}</span>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div style={styles.navbarRight}>
-            {/* Desktop logout */}
-            <button
-              className="shelter-desktop-logout"
-              style={styles.logoutButton}
-              onClick={() => setLogoutOpen(true)}
-              disabled={signingOut}
-            >
-              {signingOut ? "Signing out..." : "⎋ Log Out"}
-            </button>
-
-            {/* Mobile ☰ toggle */}
-            <button
-              className="shelter-menu-toggle"
-              style={styles.menuToggle}
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label="Toggle navigation"
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? "✕" : "☰"}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile dropdown — slides under the bar; backdrop dims the page */}
-      {menuOpen && (
-        <div
-          className="shelter-nav-backdrop"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-      {menuOpen && (
-        <nav className="shelter-mobile-nav">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setMenuOpen(false)}
-              style={({ isActive }) => ({
-                ...styles.mobileNavLink,
-                ...(isActive ? styles.navLinkActive : {}),
-              })}
-            >
-              <span style={styles.navIcon}>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
-          <button
-            style={styles.mobileLogout}
-            onClick={() => setLogoutOpen(true)}
-            disabled={signingOut}
-          >
-            {signingOut ? "Signing out..." : "⎋ Log Out"}
-          </button>
-        </nav>
-      )}
-
-      {/* Logout confirmation lightbox */}
-      <LogoutModal
-        open={logoutOpen}
-        busy={signingOut}
-        onCancel={() => setLogoutOpen(false)}
-        onConfirm={handleLogout}
+    <>
+      <DashboardShell
+        brand={{ name: "Shelter Portal", subtitle: "Animal shelter", icon: Home }}
+        groups={groups}
+        titles={TITLES}
+        user={{ name: me?.displayName, email: me?.email, role: "Shelter" }}
+        onLogout={() => setLogoutOpen(true)}
       />
-
-      <main className="shelter-content" style={styles.content}>
-        <Outlet />
-      </main>
-    </div>
+      <LogoutModal open={logoutOpen} busy={signingOut} onCancel={() => setLogoutOpen(false)} onConfirm={handleLogout} />
+    </>
   );
 }
-
-const styles = {
-  shell: {
-    display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
-    background: "#f5f7fa",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-  },
-
-  navbar: {
-    position: "sticky",
-    top: 0,
-    zIndex: 50,
-    background: "#1b5e20",
-    borderBottom: "1px solid rgba(255,255,255,0.15)",
-    boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
-  },
-
-  navbarInner: {
-    display: "flex",
-    alignItems: "center",
-    gap: "24px",
-    padding: "0 24px",
-    height: "64px",
-  },
-
-  navbarBrand: {
-    fontWeight: 700,
-    fontSize: "19px",
-    letterSpacing: "0.3px",
-    color: "#fff",
-    whiteSpace: "nowrap",
-  },
-
-  navLinks: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    flex: 1,
-    overflowX: "auto",
-  },
-
-  navLink: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 14px",
-    borderRadius: "10px",
-    color: "rgba(255,255,255,0.85)",
-    textDecoration: "none",
-    fontSize: "15px",
-    fontWeight: 500,
-    whiteSpace: "nowrap",
-    transition: "background 0.15s ease",
-  },
-
-  navLinkActive: {
-    background: "#2e7d32",
-    color: "#fff",
-    fontWeight: 600,
-  },
-
-  navIcon: {
-    fontSize: "18px",
-  },
-
-  navbarRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginLeft: "auto",
-  },
-
-  logoutButton: {
-    padding: "8px 16px",
-    background: "rgba(255,255,255,0.1)",
-    border: "1px solid rgba(255,255,255,0.25)",
-    borderRadius: "10px",
-    color: "#fff",
-    fontSize: "14px",
-    fontWeight: 600,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
-
-  menuToggle: {
-    display: "none",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "40px",
-    height: "40px",
-    border: "none",
-    background: "transparent",
-    fontSize: "22px",
-    cursor: "pointer",
-    color: "#fff",
-  },
-
-  mobileNavLink: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "14px 20px",
-    color: "rgba(255,255,255,0.85)",
-    textDecoration: "none",
-    fontSize: "15px",
-    fontWeight: 500,
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-  },
-
-  mobileLogout: {
-    margin: "12px 16px 16px",
-    padding: "12px",
-    background: "rgba(255,255,255,0.1)",
-    border: "1px solid rgba(255,255,255,0.25)",
-    borderRadius: "10px",
-    color: "#fff",
-    fontSize: "15px",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-
-  content: {
-    flex: 1,
-    minWidth: 0,
-  },
-};
 
 export default ShelterLayout;
