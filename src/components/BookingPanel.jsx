@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { createBooking, dateKey, fmtTime, generateSlots, parseDateKey, prettyDate, useAvailability, useTakenSlots } from "../utils/booking";
+import { createBooking, dateKey, fmtTime, generateSlots, parseDateKey, prettyDate, useAvailability, useTakenSlots } from "../utils/Booking";
 
 const DAYS_AHEAD = 14;
 

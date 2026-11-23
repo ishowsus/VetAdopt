@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { DAYS, emptyWeek, fromInputTime, toInputTime, prettyDate, dateKey } from "../utils/booking";
+import { DAYS, emptyWeek, fromInputTime, toInputTime, prettyDate, dateKey } from "../utils/Booking";
 
 const defaultForm = () => ({
   accepting: true,

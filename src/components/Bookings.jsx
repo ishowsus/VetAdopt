@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import {
   OUTCOMES, dateKey, fmtTime, prettyDate, recordVisitOutcome, setAdopterInterest, updateBookingStatus, useBookings,
-} from "../utils/booking";
+} from "../utils/Booking";
 
 const CHIP = {
   Pending: { bg: "#fef3c7", fg: "#92400e" },
