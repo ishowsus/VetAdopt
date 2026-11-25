@@ -1463,7 +1463,7 @@ export default function Adopt() {
                   className={`sidebar-filter ${savedOnly ? "active" : ""}`}
                   onClick={() => setParam("saved", savedOnly ? "" : "1")}
                 >
-                  <span>♥ Saved pets</span>
+                  <span>♥ Favorites pets</span>
                   <span className="sidebar-count">{savedIds.size}</span>
                 </button>
               </>
