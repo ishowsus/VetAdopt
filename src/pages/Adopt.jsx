@@ -31,6 +31,32 @@ import { EMPTY_SCREENING, OPTIONS, validateScreening, cleanScreening } from "../
 const PAGE_SIZE = 9;
 
 const TYPE_ICONS = { All: "🐾", Dog: "🐶", Cat: "🐱", Rabbit: "🐰", Bird: "🦜" };
+const AGE_RANGE = {
+  All: "Any age",
+  Baby: "Baby · up to 6 months",
+  Young: "Young · 6 months to 2 years",
+  Adult: "Adult · 2 to 7 years",
+  Senior: "Senior · over 7 years",
+};
+const GENDER_SYMBOL = { male: "♂", female: "♀" };
+
+// Grid icons for the card-size switch: S = 3 columns of small cards, M = 2, L = 1 big card.
+function SizeIcon({ size }) {
+  const cell = size === "S" ? 4 : size === "M" ? 7 : 14;
+  const gap = size === "S" ? 2 : size === "M" ? 2 : 0;
+  const n = size === "S" ? 3 : size === "M" ? 2 : 1;
+  const rects = [];
+  for (let r = 0; r < n; r += 1) {
+    for (let c = 0; c < n; c += 1) {
+      rects.push(<rect key={`${r}-${c}`} x={2 + c * (cell + gap)} y={2 + r * (cell + gap)} width={cell} height={cell} rx={size === "L" ? 3 : 1.2} />);
+    }
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true" focusable="false">
+      {rects}
+    </svg>
+  );
+}
 const validType = (t) => { const n = t === "Parrot" ? "Bird" : t; return n && TYPE_ICONS[n] ? n : "All"; };
 const BADGE_COLORS = {
   Available: { bg: "#d6f2f0", text: "#0d6b6e" },
@@ -245,7 +271,8 @@ const EmbeddedStyles = () => (
 
     /* ---------- Card size control ---------- */
     .ad-size { display: inline-flex; margin-left: 0; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #fff; }
-    .ad-size-btn { min-width: 40px; min-height: 42px; padding: 0 12px; border: none; background: transparent; color: #475569; font-weight: 700; cursor: pointer; }
+    .ad-size-btn { display: inline-grid; place-items: center; min-width: 42px; min-height: 42px; padding: 0 12px; border: none; background: transparent; color: #4b6469; cursor: pointer; }
+    .ad-size-btn:hover:not(.active) { background: #ecf9f8; }
     .ad-size-btn + .ad-size-btn { border-left: 1px solid #e2e8f0; }
     .ad-size-btn.active { background: #0d6b6e; color: #fff; }
     .ad-size-btn:focus-visible { outline: 3px solid #0d6b6e; outline-offset: -3px; }
@@ -336,6 +363,79 @@ const EmbeddedStyles = () => (
       .ad-species-group { display: none; }
     }
     @media (max-width: 700px) { .ad-hero { grid-template-columns: 1fr; padding: 18px; } .ad-hero-img { display: none; } }
+
+    /* ====== Adopt redesign: teal glass, photo-first cards ====== */
+    .adopt-root { --head: var(--vp-font, 'Plus Jakarta Sans'), system-ui, sans-serif; font-family: var(--vp-font, 'Plus Jakarta Sans'), system-ui, -apple-system, 'Segoe UI', sans-serif; position: relative; isolation: isolate; color: #0e2a2f; }
+    .adopt-root::before { content: ""; position: fixed; inset: 0; z-index: -1; background: linear-gradient(135deg, #e8f1fb 0%, #e2f5f1 100%); }
+
+    .ad-hero { grid-template-columns: 1.15fr 1fr; gap: 32px; padding: 36px; background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(214,242,240,0.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.85); border-radius: 28px; box-shadow: 0 1px 2px rgba(11,84,87,.06), 0 16px 40px rgba(11,84,87,.1); }
+    .ad-eyebrow { display: inline-block; padding: 5px 14px; border-radius: 999px; background: #d6f2f0; color: #0b5457; font-size: 0.78rem; font-weight: 700; letter-spacing: .04em; margin-bottom: 14px; }
+    .ad-hero h1 { font-size: clamp(2.3rem, 5.5vw, 3.6rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; margin: 0 0 12px; color: #0a3d40; }
+    .ad-hero h1 em { color: #11888a; }
+    .ad-hero p { max-width: 460px; color: #4b6469; font-size: 1.02rem; line-height: 1.55; margin: 0 0 20px; }
+    .ad-search { background: #fff; border: 1.5px solid #d3e3e5; border-radius: 999px; padding: 14px 18px 14px 44px; box-shadow: 0 4px 14px rgba(11,84,87,.08); }
+    .ad-search:focus { border-color: #0d6b6e; box-shadow: 0 0 0 3px #b8e6e3; }
+    .ad-hero-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .ad-hero-links a { padding: 8px 16px; border-radius: 999px; background: rgba(255,255,255,0.85); border: 1px solid #d3e3e5; color: #0b5457; font-weight: 700; font-size: 0.86rem; text-decoration: none; }
+    .ad-hero-links a:hover { background: #fff; border-color: #0d6b6e; }
+    .ad-hero-img { aspect-ratio: 5 / 4; border-radius: 22px; box-shadow: 0 14px 36px rgba(11,84,87,.22); }
+
+    .side-card { background: rgba(255,255,255,0.78); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.9); border-radius: 20px; box-shadow: 0 1px 2px rgba(11,84,87,.06), 0 12px 32px rgba(11,84,87,.08); }
+    .side-card h3 { font-size: 1.15rem; font-weight: 800; color: #0a3d40; }
+    .side-card h4 { color: #4b6469; font-weight: 700; }
+    .sidebar-filter { background: transparent; border: 1px solid transparent; border-radius: 12px; color: #0e2a2f; padding: 10px 12px; }
+    .sidebar-filter:hover { background: #ecf9f8; border-color: #d6f2f0; }
+    .sidebar-filter.active { background: #0d6b6e; color: #fff; border-color: #0d6b6e; font-weight: 700; }
+    .sidebar-filter.active .sidebar-count { color: #d6f2f0; }
+    .reset-btn { border-radius: 12px; border-color: #b8e6e3; color: #0b5457; }
+
+    .ad-controls { align-items: center; flex-wrap: wrap; gap: 12px; }
+    .ad-sort, .ad-filter-btn { border-radius: 999px; border-color: #d3e3e5; background: rgba(255,255,255,0.9); font-weight: 600; color: #0e2a2f; padding-left: 16px; }
+    .ad-post-btn { border-radius: 999px; padding: 0 20px; }
+    .ad-size { border-radius: 999px; border-color: #d3e3e5; }
+    .ad-resultbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; color: #4b6469; font-size: 0.92rem; }
+    .ad-resultbar strong { color: #0a3d40; font-size: 1rem; margin-right: 4px; }
+    .ad-active-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #b8e6e3; border-radius: 999px; background: #ecf9f8; color: #0b5457; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+    .ad-active-chip:hover { background: #d6f2f0; }
+    .ad-category-title { font-family: var(--head); font-weight: 800; color: #0a3d40; border-bottom: 2px solid rgba(13,107,110,0.18); }
+
+    /* the card: photo on top, facts and tags below, one clear action */
+    .pc3-card { display: flex; flex-direction: column; overflow: hidden; cursor: pointer; background: rgba(255,255,255,0.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.95); border-radius: 22px; box-shadow: 0 1px 2px rgba(11,84,87,.06), 0 10px 28px rgba(11,84,87,.09); transition: transform .18s ease, box-shadow .18s ease; }
+    .pc3-card:hover { transform: translateY(-4px); box-shadow: 0 2px 4px rgba(11,84,87,.08), 0 18px 40px rgba(11,84,87,.16); }
+    .pc3-card:focus-within { outline: 3px solid #0d6b6e; outline-offset: 2px; }
+    .pc3-photo { position: relative; aspect-ratio: 4 / 3; background: #d6f2f0; overflow: hidden; }
+    .pc3-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease; }
+    .pc3-card:hover .pc3-img { transform: scale(1.04); }
+    .pc3-badge { position: absolute; top: 12px; left: 12px; padding: 4px 11px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .pc3-heart { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; display: grid; place-items: center; border: none; border-radius: 50%; background: rgba(255,255,255,0.94); font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.14); }
+    .pc3-heart:focus-visible, .pc3-btn:focus-visible { outline: 3px solid #0d6b6e; outline-offset: 2px; }
+    .pc3-body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
+    .pc3-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pc3-name { margin: 0; font-family: var(--head); font-size: 1.2rem; font-weight: 800; color: #0a3d40; }
+    .pc3-gender { font-size: 1.15rem; font-weight: 700; color: #11888a; }
+    .pc3-meta { margin: 2px 0 10px; font-size: 0.86rem; color: #4b6469; }
+    .pc3-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .pc3-tag { padding: 3px 10px; border-radius: 8px; background: #ecf9f8; border: 1px solid #d6f2f0; color: #0b5457; font-size: 0.75rem; font-weight: 600; }
+    .pc3-body .pc2-by { margin: 0 0 12px; }
+    .pc3-body .pc2-by-name { color: #0e2a2f; }
+    .pc3-body .pc2-by-img { border-color: #d3e3e5; }
+    .pc3-btn { margin-top: auto; width: 100%; padding: 11px; border: 2px solid #0d6b6e; border-radius: 14px; background: #0d6b6e; color: #fff; font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: background .15s; }
+    .pc3-btn:hover { background: #0b5457; border-color: #0b5457; }
+
+    .sk-card { border-radius: 22px; background: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.9); }
+    .sk-img { aspect-ratio: 4 / 3; background: #d6f2f0; }
+    .sk-line { background: #e3f1f0; }
+    .ad-empty { background: rgba(255,255,255,0.75); border-color: #b8e6e3; border-radius: 20px; color: #4b6469; }
+    .ad-loadmore { border-radius: 999px; border-color: #0d6b6e; color: #0b5457; background: rgba(255,255,255,0.9); }
+    @media (max-width: 850px) {
+      .ad-hero { padding: 22px; }
+      .ad-chip.active { background: #0d6b6e; border-color: #0d6b6e; color: #fff; }
+    }
+    @media (max-width: 700px) { .ad-hero { grid-template-columns: 1fr; } }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .ad-hero, .side-card, .pc3-card { background: rgba(255,255,255,0.96); }
+    }
+    @media (prefers-reduced-motion: reduce) { .pc3-card, .pc3-img { transition: none; } .pc3-card:hover { transform: none; } .pc3-card:hover .pc3-img { transform: none; } }
   `}</style>
 );
 
@@ -434,38 +534,50 @@ function PosterChip({ poster, role, size = 26 }) {
 function PetCard({ pet, poster, onExpand, index, saved, onToggleSave }) {
   const img = usePetImage(pet);
   const badge = pet.badge || pet.status || "Available";
-  const meta = [pet.age, pet.gender, pet.city || pet.location].filter(Boolean).join(" · ");
+  const where = pet.city || pet.location;
+  const facts = [pet.breed || pet.type, pet.age, where].filter(Boolean).join(" • ");
+  const tags = Array.isArray(pet.tags) ? pet.tags.filter(Boolean).slice(0, 3) : [];
+  const symbol = GENDER_SYMBOL[String(pet.gender || "").toLowerCase()];
 
   return (
     <motion.article
-      className="pc2-card"
+      className="pc3-card"
       onClick={() => onExpand(pet)}
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.3, delay: (index % 9) * 0.04, ease: "easeOut" }}
     >
-      <img className="pc2-img" src={img.src} alt="" onError={img.onError} />
-      <div className="pc2-shade" />
-      <span className="pc2-badge" style={badgeStyle(badge)}>{badge}</span>
-      <button
-        type="button"
-        className="pc2-heart"
-        style={{ color: saved ? "#dc2626" : "#334155" }}
-        aria-pressed={saved}
-        aria-label={saved ? `Remove ${pet.name} from saved pets` : `Save ${pet.name}`}
-        onClick={(e) => { e.stopPropagation(); onToggleSave(pet); }}
-      >
-        {saved ? "♥" : "♡"}
-      </button>
-      <div className="pc2-info">
+      <div className="pc3-photo">
+        <img className="pc3-img" src={img.src} alt={`${pet.name}${pet.breed ? `, ${pet.breed}` : ""}`} loading="lazy" onError={img.onError} />
+        <span className="pc3-badge" style={badgeStyle(badge)}>{badge}</span>
+        <button
+          type="button"
+          className="pc3-heart"
+          style={{ color: saved ? "#dc2626" : "#0b5457" }}
+          aria-pressed={saved}
+          aria-label={saved ? `Remove ${pet.name} from saved pets` : `Save ${pet.name}`}
+          onClick={(e) => { e.stopPropagation(); onToggleSave(pet); }}
+        >
+          {saved ? "♥" : "♡"}
+        </button>
+      </div>
+
+      <div className="pc3-body">
+        <div className="pc3-title">
+          <h3 className="pc3-name">{pet.name}</h3>
+          {symbol && <span className="pc3-gender" role="img" aria-label={pet.gender}>{symbol}</span>}
+        </div>
+        {facts && <p className="pc3-meta">{facts}</p>}
+        {tags.length > 0 && (
+          <div className="pc3-tags">
+            {tags.map((t) => <span key={t} className="pc3-tag">{t}</span>)}
+          </div>
+        )}
         <PosterChip poster={poster} role={pet.postedByRole} />
-        <p className="pc2-sub">{pet.breed || pet.type}</p>
-        <h3 className="pc2-name">
-          <button type="button" className="pc2-name-btn" aria-haspopup="dialog">{pet.name}</button>
-        </h3>
-        {meta && <p className="pc2-meta">{meta}</p>}
-        <p className="pc2-hint">Tap for details</p>
+        <button type="button" className="pc3-btn" aria-haspopup="dialog" onClick={(e) => { e.stopPropagation(); onExpand(pet); }}>
+          Meet {pet.name}
+        </button>
       </div>
     </motion.article>
   );
@@ -1291,9 +1403,10 @@ export default function Adopt() {
       <EmbeddedStyles />
 
       <section className="ad-hero">
-        <div>
-          <h1>Find a pet who needs a home</h1>
-          <p>Browse pets posted by shelters and owners on this platform.</p>
+        <div className="ad-hero-copy">
+          <span className="ad-eyebrow">Find your forever friend</span>
+          <h1>Adopt. Care. <em>Love.</em></h1>
+          <p>Meet pets from trusted shelters and owners near you, and get the care guidance to keep them healthy and happy.</p>
           <div className="ad-search-wrap">
             <span className="ad-search-icon" aria-hidden="true">🔍</span>
             <input
@@ -1304,6 +1417,10 @@ export default function Adopt() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+          <div className="ad-hero-links">
+            <Link to="/pet-care">🐾 Pet care guide</Link>
+            <Link to="/vets">🩺 Find a vet</Link>
           </div>
         </div>
         <img className="ad-hero-img" src={heroImg.src} alt="" onError={heroImg.onError} />
@@ -1317,7 +1434,7 @@ export default function Adopt() {
             <button type="button" className="ad-chip" onClick={() => setFiltersOpen(false)}>Show results</button>
           </div>
           <div className="side-card">
-            <h3>🐾 Find your perfect pet</h3>
+            <h3>Filter by</h3>
 
             <div className="ad-species-group">
             <h4>Species</h4>
@@ -1359,7 +1476,7 @@ export default function Adopt() {
                 className={`sidebar-filter ${ageFilter === age ? "active" : ""}`}
                 onClick={() => setAgeFilter(age)}
               >
-                {age}
+                {AGE_RANGE[age]}
               </button>
             ))}
 
@@ -1419,11 +1536,30 @@ export default function Adopt() {
                   title={`${label} cards`}
                   onClick={() => setCardSize(k)}
                 >
-                  {k}
+                  <SizeIcon size={k} />
                 </button>
               ))}
             </div>
           </div>
+
+          {!petsLoading && !loadError && (
+            <div className="ad-resultbar" aria-live="polite">
+              <strong>{sortedPets.length} pet{sortedPets.length !== 1 ? "s" : ""}</strong>
+              {[
+                filter !== "All" && { k: "type", label: `${filter}s`, clear: () => selectFilter("All") },
+                ageFilter !== "All" && { k: "age", label: AGE_RANGE[ageFilter], clear: () => setAgeFilter("All") },
+                genderFilter !== "All" && { k: "gender", label: genderFilter, clear: () => setGenderFilter("All") },
+                savedOnly && { k: "saved", label: "Saved only", clear: () => setParam("saved", "") },
+                search.trim() && { k: "q", label: `“${search.trim()}”`, clear: () => setSearch("") },
+              ]
+                .filter(Boolean)
+                .map((c) => (
+                  <button key={c.k} type="button" className="ad-active-chip" onClick={c.clear} aria-label={`Remove filter ${c.label}`}>
+                    {c.label} <span aria-hidden="true">✕</span>
+                  </button>
+                ))}
+            </div>
+          )}
 
           {petsLoading ? (
             <SkeletonGrid />
