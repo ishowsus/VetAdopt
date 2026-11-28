@@ -286,9 +286,9 @@ export default function MessageNotifier({ user }) {
 }
 
 const CSS = `
-.mn-fab { position: fixed; left: 18px; bottom: 18px; z-index: 950; width: 54px; height: 54px; border: none; border-radius: 50%; background: #0f172a; color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 8px 22px rgba(15,23,42,.4); }
+.mn-fab { position: fixed; left: 18px; bottom: 18px; z-index: 950; width: 54px; height: 54px; border: none; border-radius: 50%; background: #0f172a; color: #fff; font-size: 24px; display: grid; place-items: center; padding: 0; line-height: 1; cursor: pointer; box-shadow: 0 8px 22px rgba(15,23,42,.4); }
 .mn-fab:focus-visible, .mn-row:focus-visible, .mn-x:focus-visible, .mn-link:focus-visible, .mn-toast:focus-visible { outline: 3px solid #19a3a1; outline-offset: 2px; }
-.mn-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #dc2626; color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+.mn-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #dc2626; color: #fff; font-size: 12px; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #fff; }
 .mn-panel { position: fixed; left: 18px; bottom: 84px; z-index: 950; display: flex; flex-direction: column; width: min(380px, calc(100vw - 24px)); max-height: min(600px, calc(100dvh - 110px)); background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 16px 48px rgba(15,23,42,.28); overflow: hidden; color: #0f172a; font-family: inherit; }
 .mn-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
 .mn-x { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
@@ -310,10 +310,11 @@ const CSS = `
 .mn-link { background: none; border: none; color: #0d6b6e; font: inherit; font-weight: 700; cursor: pointer; padding: 6px 10px; text-decoration: underline; }
 .mn-link.small { font-size: .72rem; margin-left: auto; padding: 0; text-transform: none; letter-spacing: 0; }
 .mn-desktop { margin: 10px 8px 0; padding: 9px 12px; width: calc(100% - 16px); border: 1px dashed #b8e6e3; border-radius: 12px; background: #ecf9f8; color: #0b5457; font: inherit; font-size: .82rem; cursor: pointer; text-align: left; }
-.mn-toast { position: fixed; left: 18px; bottom: 84px; z-index: 960; display: flex; flex-direction: column; gap: 2px; max-width: min(340px, calc(100vw - 36px)); padding: 12px 16px; border: none; border-left: 5px solid #0d6b6e; border-radius: 14px; background: #fff; box-shadow: 0 12px 36px rgba(15,23,42,.3); text-align: left; cursor: pointer; font: inherit; color: #0f172a; animation: mn-in .25s ease; }
+.mn-toast { position: fixed; left: 50%; top: 16px; right: auto; bottom: auto; transform: translateX(-50%); z-index: 960; display: flex; flex-direction: column; align-items: center; gap: 2px; width: max-content; max-width: min(420px, calc(100vw - 32px)); padding: 12px 22px; border: none; border-top: 4px solid #0d6b6e; border-radius: 16px; background: #fff; box-shadow: 0 12px 36px rgba(15,23,42,.3); text-align: center; cursor: pointer; font: inherit; color: #0f172a; animation: mn-in-c .25s ease; }
 .mn-toast span { color: #475569; font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mn-panel.mn-top { left: auto; right: 16px; bottom: auto; top: 72px; max-height: calc(100dvh - 100px); }
-.mn-toast.mn-top { left: auto; right: 16px; bottom: auto; top: 72px; }
+.mn-toast.mn-top { left: 50%; right: auto; bottom: auto; top: 16px; }
+@keyframes mn-in-c { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes mn-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .mn-toast { animation: none; } }
 `;

@@ -73,7 +73,7 @@
 .dsh-sidebar a:focus-visible, .dsh-sidebar button:focus-visible { outline-color: #ffffff; }
 .dsh-icon-btn { display: inline-grid; place-items: center; width: 36px; height: 36px; border: none; border-radius: 10px; background: transparent; color: var(--d-muted); cursor: pointer; position: relative; flex-shrink: 0; }
 .dsh-icon-btn:hover { background: var(--d-hover); color: var(--d-text); }
-.dsh-dot { position: absolute; top: 3px; right: 3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 0.65rem; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--d-panel); }
+.dsh-dot { line-height: 1; position: absolute; top: 3px; right: 3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 0.65rem; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--d-panel); }
 
 /* ── frame, panel and topbar ── */
 .dsh-frame { flex: 1; min-width: 0; padding: 10px 10px 10px 0; height: 100%; }

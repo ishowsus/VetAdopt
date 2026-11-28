@@ -40,6 +40,15 @@ const AGE_RANGE = {
 };
 const GENDER_SYMBOL = { male: "♂", female: "♀" };
 
+// A heart drawn as an SVG, so it sits dead-centre in its button (text hearts shift between fonts).
+function HeartIcon({ filled = false, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    </svg>
+  );
+}
+
 // Grid icons for the card-size switch: S = 3 columns of small cards, M = 2, L = 1 big card.
 function SizeIcon({ size }) {
   const cell = size === "S" ? 4 : size === "M" ? 7 : 14;
@@ -408,6 +417,12 @@ const EmbeddedStyles = () => (
     .pc3-card:hover .pc3-img { transform: scale(1.04); }
     .pc3-badge { position: absolute; top: 12px; left: 12px; padding: 4px 11px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     .pc3-heart { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; display: grid; place-items: center; border: none; border-radius: 50%; background: rgba(255,255,255,0.94); font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.14); }
+    .pc3-heart { padding: 0; line-height: 0; transition: transform .15s ease; }
+    .pc3-heart:hover { transform: scale(1.1); }
+    .pc3-heart.on svg { animation: heartPop .32s ease; }
+    @keyframes heartPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    .fav-label { display: inline-flex; align-items: center; gap: 8px; }
+    @media (prefers-reduced-motion: reduce) { .pc3-heart, .pc3-heart.on svg { animation: none; transition: none; } }
     .pc3-heart:focus-visible, .pc3-btn:focus-visible { outline: 3px solid #0d6b6e; outline-offset: 2px; }
     .pc3-body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
     .pc3-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -553,13 +568,13 @@ function PetCard({ pet, poster, onExpand, index, saved, onToggleSave }) {
         <span className="pc3-badge" style={badgeStyle(badge)}>{badge}</span>
         <button
           type="button"
-          className="pc3-heart"
+          className={`pc3-heart ${saved ? "on" : ""}`}
           style={{ color: saved ? "#dc2626" : "#0b5457" }}
           aria-pressed={saved}
-          aria-label={saved ? `Remove ${pet.name} from saved pets` : `Save ${pet.name}`}
+          aria-label={saved ? `Remove ${pet.name} from favorite pets` : `Add ${pet.name} to favorite pets`}
           onClick={(e) => { e.stopPropagation(); onToggleSave(pet); }}
         >
-          {saved ? "♥" : "♡"}
+          <HeartIcon filled={saved} />
         </button>
       </div>
 
@@ -1457,13 +1472,13 @@ export default function Adopt() {
 
             {user && (
               <>
-                <h4>Saved</h4>
+                <h4>Favorites</h4>
                 <button
                   type="button"
                   className={`sidebar-filter ${savedOnly ? "active" : ""}`}
                   onClick={() => setParam("saved", savedOnly ? "" : "1")}
                 >
-                  <span>♥ Favorites pets</span>
+                  <span className="fav-label"><HeartIcon filled size={16} /> Favorite pets</span>
                   <span className="sidebar-count">{savedIds.size}</span>
                 </button>
               </>
@@ -1549,7 +1564,7 @@ export default function Adopt() {
                 filter !== "All" && { k: "type", label: `${filter}s`, clear: () => selectFilter("All") },
                 ageFilter !== "All" && { k: "age", label: AGE_RANGE[ageFilter], clear: () => setAgeFilter("All") },
                 genderFilter !== "All" && { k: "gender", label: genderFilter, clear: () => setGenderFilter("All") },
-                savedOnly && { k: "saved", label: "Saved only", clear: () => setParam("saved", "") },
+                savedOnly && { k: "saved", label: "Favorites only", clear: () => setParam("saved", "") },
                 search.trim() && { k: "q", label: `“${search.trim()}”`, clear: () => setSearch("") },
               ]
                 .filter(Boolean)

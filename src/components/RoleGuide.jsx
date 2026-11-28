@@ -16,7 +16,7 @@ const GUIDES = {
   adopter: {
     title: "Welcome to VetAdopt! 🐾",
     steps: [
-      ["🐶", "Find your pet", "Browse available pets on the Adopt page. Filter by type, age and gender, and tap the heart to save the ones you love.", "/adopt"],
+      ["🐶", "Find your pet", "Browse available pets on the Adopt page. Filter by type, age and gender, and tap the heart to add pets to your favorites.", "/adopt"],
       ["💬", "Talk to shelters", "Message a shelter or a pet's owner, and book a visit to meet a pet in person before you decide.", "/adopt"],
       ["📋", "Apply to adopt", "Verify your email, answer a few questions about your home and routine, and send your application. Follow your visits in Profile, then My bookings.", "/profile?tab=bookings"],
       ["✅", "Get verified", "Add your ID under Profile, then Verification, so shelters know they can trust you.", "/profile?tab=verification"],
@@ -173,4 +173,4 @@ const s = {
   ghost: { border: "none", background: "none", color: "#64748b", cursor: "pointer", padding: "8px 4px", fontWeight: 600 },
   secondary: { padding: "9px 18px", border: "2px solid #0d6b6e", borderRadius: 10, background: "#fff", color: "#0d6b6e", fontWeight: 700, cursor: "pointer" },
   primary: { padding: "9px 22px", border: "none", borderRadius: 10, background: "#0d6b6e", color: "#fff", fontWeight: 700, cursor: "pointer" },
-};s
+};
